@@ -66,16 +66,20 @@ Master task list. Mark done with `[x]` and a date; add new tasks in place. Synce
 - [x] Commit each capability separately — 2026-07-20: v0.12.5 dep, v0.12.6 pricing, v0.13.0
       adapter+chain, v0.13.1 thinking-model token fix, v0.13.2 docs/spec amendment.
 
-## Day 4 — Frontend
+## Day 4 — Frontend  (done 2026-07-20)
 
-- [ ] Customer table: search/filter/sort/pagination
-- [ ] Dashboard summary by plan tier
-- [ ] Detail view: customer info + usage + pitch **side by side**
-- [ ] Streaming render (token-by-token) + status states (not generated/generating/ready/failed)
-- [ ] Copy + regenerate (force) controls
-- [ ] Bulk progress UI (X of N, live) + per-item state `[GAP #2]`
-- [ ] Providers (`PitchProvider`, `FiltersProvider`, `QueryProvider`) + TanStack Query; `usePitchStream`
-- [ ] Commit per component/feature
+- [x] Customer table: search/filter/sort/pagination — 2026-07-20 (v0.15.0)
+- [x] Dashboard summary by plan tier — 2026-07-20 (v0.15.0)
+- [x] Detail view: customer info + usage + pitch **side by side** — 2026-07-20 (v0.16.0)
+- [x] Streaming render (token-by-token) + status states (not generated/generating/ready/failed) — 2026-07-20 (v0.16.0)
+- [x] Copy + regenerate (force) controls — 2026-07-20 (v0.16.0)
+- [x] Bulk progress UI (X of N, live) + per-item state `[GAP #2]` — 2026-07-20 (v0.17.0)
+- [x] Providers (`PitchProvider`, `FiltersProvider`, `QueryProvider`) + TanStack Query; `usePitchStream` — 2026-07-20
+- [x] Commit per component/feature — 2026-07-20: v0.13.3 gitattributes, v0.14.0 BFF/client/sse,
+      v0.15.0 dashboard+table, v0.16.0 detail+pitch, v0.17.0 bulk, v0.17.1 tests
+- Notes: BFF is a single catch-all proxy (`app/api/[...path]`); single-pitch SSE is POST → read via
+  fetch+ReadableStream, not EventSource; teeth step verified streaming/bulk through the live BFF
+  (Playwright browser MCP unavailable → HTTP-level verification). Playwright E2E deferred to Day 5.
 
 ## Day 5 — Tests, Docker, Deploy, README
 

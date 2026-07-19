@@ -292,3 +292,33 @@ key decisions.
   makes fresh worktree checkouts CRLF, which breaks the prettier pre-commit hook. Normalized the
   worktree's web files back to LF (git-invisible) to get commits through. A `.gitattributes`
   enforcing LF is the real fix — deferred as separate repo-hygiene work.
+
+## 2026-07-20 — Day 4: Frontend (dashboard, table, streaming pitch, bulk)
+
+- **What:** Built the agent UI over the finished endpoints, in a `day4-frontend` worktree; six
+  incremental commits (v0.13.3 → v0.17.1). Scope held: streaming + state management built well,
+  visuals minimal (Tailwind defaults, hand-rolled primitives, no library); auth stubbed.
+- **v0.13.3** chore: added `.gitattributes` (enforce LF) — the durable fix for the recurring
+  autocrlf↔prettier problem; it also revealed the assignment PDF working copy was being CRLF-corrupted
+  and restored it.
+- **Architecture:** browser → single catch-all Next route handler `app/api/[...path]/route.ts` →
+  FastAPI (backend URL stays server-side, one origin). SSE bodies pass through unbuffered. Single-pitch
+  SSE is a POST, so the client reads it via `fetch` + `ReadableStream` (`lib/sse` parser), not
+  EventSource. State: QueryProvider → FiltersProvider → PitchProvider.
+- **v0.14.0** BFF proxy + typed API client + `lib/sse` parser + `types/api` aliases & SSE unions.
+- **v0.15.0** dashboard summary + customer table (FiltersProvider, useCustomers/useDashboard, Filters,
+  pagination) + ui primitives (Button/Badge/Spinner/PitchStatusBadge).
+- **v0.16.0** detail page (info + usage bars beside the pitch) + PitchProvider state machine
+  (not_generated→generating→ready/failed; regenerating/fallback reset visible text) + PitchPanel
+  (token-by-token render, copy, regenerate=force, meta footer).
+- **v0.17.0** bulk progress (GAP #2): useBulkGeneration — SSE `/stream` invalidates a TanStack poll of
+  the status endpoint (single source of truth: counts + per-item items[]), refetchInterval fallback;
+  BulkProgress X-of-N bar + per-item list; runs on the current page (cap 200).
+- **v0.17.1** Vitest + RTL setup + 12 tests (sse parser incl. split-chunk/CRLF, pitch reducer
+  transitions, PitchStatusBadge, BulkProgress).
+- **Teeth step:** ran FastAPI (mock, SSE_TOKEN_CHUNK_DELAY_MS=40) + `next dev`; verified through the
+  live BFF: list/dashboard JSON proxy, pages render 200, single-pitch SSE streams token-by-token, bulk
+  start/stream/poll with per-item results, no dev-log errors. Playwright browser MCP wasn't connected
+  this session, so the visual watch was done at the HTTP-streaming level, not a rendered browser.
+- **Verification:** web typecheck + eslint + prettier clean; 12 Vitest tests pass; hooks green on every
+  commit. Playwright streaming E2E deferred to Day 5 per the day plan.
