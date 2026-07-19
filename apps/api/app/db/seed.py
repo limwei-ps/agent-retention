@@ -14,16 +14,13 @@ from faker import Faker
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.core.catalog import CATALOG
+from app.core.catalog import CATALOG, SOFT_CAP_GB
 from app.models.customer import Customer
 
 SEED = 1337
 CUSTOMER_COUNT = 60
 ARCHETYPES = ("flat_low", "climbing", "heavy")
 REGIONS = ("Klang Valley", "Penang", "Johor", "Sabah", "Sarawak", "Perak", "Melaka")
-
-# Rough monthly soft-cap (GB) per tier — shapes realistic usage curves.
-_SOFT_CAP = {"fibre_100": 300, "fibre_300": 600, "fibre_500": 1000, "fibre_1000": 2000}
 
 
 def _last_12_months(today: date) -> list[str]:
@@ -74,7 +71,7 @@ def _build_customers(today: date) -> list[Customer]:
         plan = rng.choice(CATALOG)
         archetype = ARCHETYPES[i % len(ARCHETYPES)]
         monthly_price = plan.price_myr - rng.choice([0, 0, 10, 20])
-        gb_points = _usage_curve(rng, archetype, _SOFT_CAP[plan.id])
+        gb_points = _usage_curve(rng, archetype, SOFT_CAP_GB[plan.id])
         usage_history = [{"month": m, "gb": gb} for m, gb in zip(months, gb_points)]
 
         customers.append(

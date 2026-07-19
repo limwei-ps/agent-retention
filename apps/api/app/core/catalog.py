@@ -27,6 +27,14 @@ CATALOG: tuple[PlanTier, ...] = (
 
 _BY_ID: dict[str, PlanTier] = {p.id: p for p in CATALOG}
 
+# Rough monthly soft-cap (GB) per tier — shapes seeded usage curves and the grounding usage bucket.
+SOFT_CAP_GB: dict[str, int] = {
+    "fibre_100": 300,
+    "fibre_300": 600,
+    "fibre_500": 1000,
+    "fibre_1000": 2000,
+}
+
 # Offer-ladder constants (spec §1.3).
 RETAIN_DISCOUNT = 0.15  # 15% off current monthly price
 RETAIN_DISCOUNT_TOP_TIER = 0.20  # deeper discount when there's no upgrade path
