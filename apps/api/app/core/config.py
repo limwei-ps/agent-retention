@@ -20,6 +20,11 @@ class Settings(BaseSettings):
     # LLM — mock-first; real Gemini behind the flag (see spec §4.9)
     llm_mode: str = "mock"  # "mock" | "gemini"
     gemini_api_key: str | None = None
+    gemini_model_primary: str = "gemini-2.5-pro"
+    gemini_model_secondary: str = "gemini-2.5-flash"
+
+    # Streaming pace: 0 in tests; a small delay in dev makes the mock stream visibly (spec §4.10).
+    sse_token_chunk_delay_ms: int = 0
 
     # Bulk generation backpressure (spec §4.5)
     bulk_concurrency: int = 4
