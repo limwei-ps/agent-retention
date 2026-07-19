@@ -16,5 +16,6 @@ RUN uv sync --no-dev --frozen || uv sync --no-dev
 
 COPY . .
 
+# Cloud Run injects $PORT (defaults to 8080); fall back to 8000 for local/compose.
 EXPOSE 8000
-CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "uv run uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

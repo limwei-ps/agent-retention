@@ -1,0 +1,20 @@
+# Files not needed in the Cloud Build / deploy upload.
+.git
+.github
+.claude
+docs
+node_modules
+**/node_modules
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+**/.next
+**/*.db
+**/*.db-wal
+**/*.db-shm
+**/.env
+**/.env.*
+!**/.env.example
+apps/web/playwright-report
+apps/web/test-results
