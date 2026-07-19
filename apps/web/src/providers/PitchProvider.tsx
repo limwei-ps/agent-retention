@@ -27,7 +27,7 @@ type Action =
 
 type StateMap = Record<string, PitchState>;
 
-function pitchReducer(state: StateMap, action: Action): StateMap {
+export function pitchReducer(state: StateMap, action: Action): StateMap {
   const current = state[action.id] ?? EMPTY;
   const set = (next: PitchState): StateMap => ({ ...state, [action.id]: next });
 

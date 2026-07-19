@@ -7,13 +7,14 @@ export interface SseFrame {
   data: string;
 }
 
+const FRAME_BOUNDARY = /\r?\n\r?\n/;
+
 function parseFrame(raw: string): SseFrame | null {
   let event = "message";
   const dataLines: string[] = [];
-  for (const line of raw.split("\n")) {
-    const clean = line.replace(/\r$/, "");
-    if (clean.startsWith("event:")) event = clean.slice(6).trim();
-    else if (clean.startsWith("data:")) dataLines.push(clean.slice(5).trim());
+  for (const line of raw.split(/\r?\n/)) {
+    if (line.startsWith("event:")) event = line.slice(6).trim();
+    else if (line.startsWith("data:")) dataLines.push(line.slice(5).trim());
   }
   if (dataLines.length === 0) return null;
   return { event, data: dataLines.join("\n") };
@@ -28,10 +29,9 @@ export async function* parseSse(stream: ReadableStream<Uint8Array>): AsyncGenera
       const { done, value } = await reader.read();
       if (done) break;
       buffer += decoder.decode(value, { stream: true });
-      let sep: number;
-      while ((sep = buffer.indexOf("\n\n")) !== -1) {
-        const frame = parseFrame(buffer.slice(0, sep));
-        buffer = buffer.slice(sep + 2);
+      for (let m = FRAME_BOUNDARY.exec(buffer); m; m = FRAME_BOUNDARY.exec(buffer)) {
+        const frame = parseFrame(buffer.slice(0, m.index));
+        buffer = buffer.slice(m.index + m[0].length);
         if (frame) yield frame;
       }
     }
