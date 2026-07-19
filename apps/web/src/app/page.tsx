@@ -1,6 +1,7 @@
 import { CustomerTable } from "@/components/customers/CustomerTable";
 import { DashboardSummary } from "@/components/customers/DashboardSummary";
 import { Filters } from "@/components/customers/Filters";
+import { BulkGenerate } from "@/components/pitches/BulkGenerate";
 
 export default function Home() {
   return (
@@ -15,6 +16,7 @@ export default function Home() {
       <section className="flex flex-col gap-3">
         <Filters />
         <CustomerTable />
+        <BulkGenerate />
       </section>
     </main>
   );
