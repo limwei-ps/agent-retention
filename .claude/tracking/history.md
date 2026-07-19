@@ -167,6 +167,19 @@ key decisions.
   over-fetch, and sync-DB-in-async / session-held-across-stream (SQLite + single-instance).
 - **Status:** 47 backend tests pass, ruff clean. **Checkpoint — paused before Phase B (bulk) + C (real Gemini).**
 
+## 2026-07-19 — Monorepo linter/format/typecheck + pre-commit hook (detour)
+
+- **What:** Unified the toolchain across the monorepo (root `pnpm lint` previously only covered web):
+  - `lint` = eslint (web) + ruff (api); `format` = ruff format + Prettier (tailwind plugin) +
+    eslint-config-prettier; `typecheck` = mypy (api, pydantic plugin) + `tsc --noEmit` (web).
+  - Applied a one-time repo-wide format.
+  - **Pre-commit hook** (`.githooks/pre-commit`) runs `format:check` + `lint`; `core.hooksPath` wired
+    via the root `prepare` script. Typecheck left to the script/CI to keep commits fast.
+- **Fixes for green typecheck:** ORM forward-refs via `TYPE_CHECKING` imports; narrowed the
+  single-flight `Future` result type.
+- **Commits:** `v0.9.2` (lint+format), `v0.9.3` (mypy+tsc), `v0.9.4` (pre-commit hook). CI deferred to
+  Day 5. 47 tests pass; lint/format/typecheck all green.
+
 ## 2026-07-19 — Adopted official plugin toolchain
 
 - **What:** Documented all enabled official-marketplace plugins in `CLAUDE.md` §10 (mapped to roles),

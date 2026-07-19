@@ -1,0 +1,11 @@
+#!/bin/sh
+# Enforce formatting + lint across the monorepo before every commit.
+# (Type-checking is intentionally left to `pnpm typecheck` / CI to keep commits fast.)
+# Enable locally with: git config core.hooksPath .githooks  (the root `prepare` script does this).
+set -e
+
+echo "pre-commit → format:check"
+pnpm format:check
+
+echo "pre-commit → lint"
+pnpm lint
