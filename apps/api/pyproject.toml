@@ -1,6 +1,6 @@
 [project]
 name = "retention-api"
-version = "0.3.0"
+version = "0.4.0"
 description = "Time Internet retention tool — FastAPI backend + AI pitch layer"
 requires-python = ">=3.12"
 dependencies = [
@@ -9,6 +9,7 @@ dependencies = [
     "pydantic>=2.9",
     "pydantic-settings>=2.6",
     "sqlalchemy>=2.0",
+    "faker>=30",
 ]
 
 [tool.uv]
