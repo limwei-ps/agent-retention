@@ -1,0 +1,21 @@
+{
+  "name": "retention",
+  "private": true,
+  "packageManager": "pnpm@10.15.1",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "docker compose up --build",
+    "dev:web": "pnpm --filter web dev",
+    "dev:api": "uv run --project apps/api uvicorn app.main:app --reload --port 8000",
+    "build": "pnpm --filter web build",
+    "lint": "pnpm --filter web lint",
+    "test:web": "pnpm --filter web test",
+    "test:api": "uv run --project apps/api pytest",
+    "gen:types": "uv run --project apps/api python apps/api/scripts/export_openapi.py > packages/shared-types/openapi.json && pnpm exec openapi-typescript packages/shared-types/openapi.json -o packages/shared-types/src/schema.ts"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.4.1"
+  }
+}
