@@ -356,12 +356,27 @@ source of truth.
 
 ### Project structure
 
-The brief grades **component structure**, so organization is a first-class convention.
+The brief grades **component structure**, so organization is a first-class convention. This is a
+**pnpm-workspace monorepo** (`apps/` + `packages/`); `apps/api` is Python/uv and lives outside the JS
+workspace.
 
-**Frontend — Next.js App Router, feature-first:**
+**Monorepo root:**
 
 ```
-frontend/src/
+package.json               private root: scripts (dev/build/lint/test/gen:types)
+pnpm-workspace.yaml        packages: ["apps/web", "packages/*"]
+docker-compose.yml         services: web (build apps/web), api (build apps/api)
+apps/{web,api}   packages/shared-types   docs/   .claude/
+```
+
+`packages/shared-types` (`@retention/shared-types`) is **generated from the FastAPI OpenAPI schema**
+via `pnpm gen:types` (runs `apps/api/scripts/export_openapi.py` → `openapi-typescript`) and committed
+so `apps/web` builds without Python.
+
+**Frontend — `apps/web`, Next.js App Router, feature-first:**
+
+```
+apps/web/src/
   app/                       routes (RSC by default)
     layout.tsx  page.tsx     dashboard + customer table
     customers/[id]/page.tsx  detail (info + pitch side by side)
@@ -376,7 +391,7 @@ frontend/src/
   providers/                 PitchProvider (per-pitch state machine), FiltersProvider, QueryProvider
   hooks/                     usePitchStream, useCustomers, useBulkGeneration
   lib/                       api client, SSE parser, formatters, utils
-  types/                     shared TS types mirroring backend DTOs
+  types/                     thin re-exports of @retention/shared-types (generated from OpenAPI)
   styles/                    globals.css + tailwind
 ```
 
@@ -384,20 +399,22 @@ Rules: feature-first grouping over type-first; colocate a component with its sty
 **providers isolated** from presentational components; **server-only** route handlers never import
 client providers; files 200–400 lines.
 
-**Backend — FastAPI (MVC / DI / DTO), mirrors the layering above:**
+**Backend — `apps/api`, FastAPI (MVC / DI / DTO), mirrors the layering above:**
 
 ```
-backend/app/
-  main.py                    app factory + router registration
-  api/                       controllers (thin routers): customers, pitches, dashboard, health
-  schemas/                   Pydantic DTOs (request/response)
-  models/                    SQLAlchemy ORM models
-  services/                  business + AI logic (pitch_service, offer_service)
-  repositories/              DAO behind interfaces (injected via Depends)
-  ai/                        llm client, prompt templates, cache, verification, fallback, cost
-  core/                      config, DI wiring, logging
-  db/                        session + seed
-tests/                       pytest (AI layer + key paths)
+apps/api/
+  app/
+    main.py                  app factory + router registration
+    api/                     controllers (thin routers): customers, pitches, dashboard, health
+    schemas/                 Pydantic DTOs (request/response)
+    models/                  SQLAlchemy ORM models
+    services/                business + AI logic (pitch_service, offer_service)
+    repositories/            DAO behind interfaces (injected via Depends)
+    ai/                      llm client, prompt templates, cache, verification, fallback, cost
+    core/                    config, DI wiring, logging
+    db/                      session + seed
+  scripts/export_openapi.py  dumps openapi.json for shared-types codegen
+  tests/                     pytest (AI layer + key paths)
 ```
 
 ### Cross-cutting

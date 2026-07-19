@@ -83,3 +83,17 @@ key decisions.
 - **Why:** User wants git commits to carry a semantic version, mirroring their global scheme (adapted).
 - **Files:** `CLAUDE.md` (§8), `docs/take-home-plan.md` (§9 cross-cutting points at §8), `tasks.md`
   (Day-2 version-file task). No history rewrite — the initial 3 commits stay as-is.
+
+## 2026-07-19 — Adopted pnpm-workspace monorepo layout
+
+- **What:** Re-encoded the project as a pnpm-workspace monorepo — `apps/web` (Next.js),
+  `apps/api` (FastAPI/uv, outside the JS workspace), `packages/shared-types` (TS types **generated
+  from the FastAPI OpenAPI schema** via `pnpm gen:types`). Docs-only (no code yet).
+- **Why:** User wants a monorepo; `apps/`+`packages/` signals intent and gives a clean e2e-ownership
+  story (generated contract types keep FE/BE in lockstep).
+- **Files:** `CLAUDE.md` (§3 layout + Monorepo bullet, §7 filter commands, §8 version-file paths),
+  `docs/take-home-plan.md` (§9 structure), `docs/spec.md` (monorepo + shared-types notes),
+  `tasks.md` (Day-2 scaffold tasks + version-file paths), `.gitignore` (pnpm entries).
+- **Key decisions:** pnpm workspaces (not Turborepo — avoid gold-plating); version source of truth =
+  `apps/web/package.json` + `apps/api/pyproject.toml`; generated `shared-types` committed so `apps/web`
+  builds without Python.

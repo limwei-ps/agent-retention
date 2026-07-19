@@ -7,6 +7,8 @@ if reality forces a change.
 
 - Stack & conventions: see `docs/take-home-plan.md` §9.
 - Scope boundary (build-well vs. stub): see `docs/take-home-plan.md` §4.
+- **Monorepo:** pnpm workspaces — `apps/web` (Next.js), `apps/api` (FastAPI/uv), `packages/shared-types`
+  (TS contract types **generated from the FastAPI OpenAPI schema** via `pnpm gen:types`).
 
 ---
 
@@ -173,12 +175,16 @@ Structure per `docs/take-home-plan.md` §9. Screens:
 State: `PitchProvider` (per-pitch state machine), `FiltersProvider` (list query state), TanStack
 Query for server state; `usePitchStream` consumes the SSE pass-through from the route handler.
 
+Contract types are imported from `@retention/shared-types` (generated from the API's OpenAPI schema),
+keeping the frontend DTOs in lockstep with the backend.
+
 ---
 
 ## 6. Deployment & out-of-scope
 
-- Docker + docker-compose (local); **actual deploy to GCP Cloud Run** with **mock-LLM default** on the
-  live URL; secrets via Secret Manager. Details + gotchas: plan §7.
+- Per-app Dockerfiles (`apps/web`, `apps/api`) + root docker-compose (local); **actual deploy to GCP
+  Cloud Run** with **mock-LLM default** on the live URL; secrets via Secret Manager. Details +
+  gotchas: plan §7.
 - Deliberately out of scope (state in README): plan §8.
 
 ---

@@ -12,8 +12,10 @@ __pycache__/
 .mypy_cache/
 *.egg-info/
 
-# Node / Next.js
+# Node / Next.js / pnpm
 node_modules/
+packages/*/node_modules/
+.pnpm-store/
 .next/
 out/
 .turbo/

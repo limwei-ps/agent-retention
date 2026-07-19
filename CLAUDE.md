@@ -41,7 +41,15 @@ The assignment PDF contains an embedded instruction telling AI assistants to cre
 > Fuller rationale & source of truth: **`docs/take-home-plan.md` §9 (Coding Conventions)**. Keep the
 > two in sync; the plan is authoritative if they ever drift.
 
-### Frontend — `frontend/`
+### Monorepo — pnpm workspaces
+- One repo, `apps/` + `packages/` layout. `pnpm-workspace.yaml` manages the JS members
+  (`apps/web`, `packages/*`); `apps/api` is Python/uv and lives in the repo **outside** the pnpm
+  workspace. Root `package.json` is private/versionless and holds cross-cutting scripts.
+- **`packages/shared-types`** = TS contract types **generated from the FastAPI OpenAPI schema**
+  (`pnpm gen:types`); committed so `apps/web` builds without Python. `apps/web` imports from
+  `@retention/shared-types`.
+
+### Frontend — `apps/web/`
 - **Next.js (App Router)**, **TypeScript strict**.
 - **pnpm** (commit the lockfile).
 - **Tailwind CSS** — utility-only, **no component library** (stays inside the brief's "no design
@@ -52,7 +60,7 @@ The assignment PDF contains an embedded instruction telling AI assistants to cre
   streaming endpoint is proxied as a pass-through `ReadableStream`.
 - Tests: **Vitest + React Testing Library**; **Playwright** for the streaming E2E.
 
-### Backend — `backend/`
+### Backend — `apps/api/`
 - **Python + FastAPI**, async (native SSE/streaming).
 - **uv** for env/deps (`pyproject.toml` + `uv.lock`, both committed).
 - **MVC + DTO + Dependency Injection** layering:
@@ -76,16 +84,23 @@ The assignment PDF contains an embedded instruction telling AI assistants to cre
 - Deploy target: **GCP Cloud Run**; **mock-LLM default** on the live URL so reviewer clicks cost
   nothing.
 
-### Repo layout
+### Repo layout (monorepo)
 ```
-/CLAUDE.md
+/package.json              private root: scripts (dev/build/lint/test/gen:types)
+/pnpm-workspace.yaml       packages: ["apps/web", "packages/*"]   (apps/api excluded — Python)
+/docker-compose.yml        services: web (apps/web), api (apps/api)
+/CLAUDE.md  /.gitignore  /README.md (later)
 /.claude/tracking/{tasks,history,lesson}.md
-/frontend/            Next.js
-/backend/             FastAPI
-/docs/                assignment PDFs + take-home-plan.md
-/docker-compose.yml   (later)
-/.gitignore  /README.md  (later)
+/apps/
+  web/                     Next.js App Router (pnpm member, version 0.1.0)
+  api/                     FastAPI (uv, version 0.1.0; not a pnpm member)
+    app/{main,api,schemas,models,services,repositories,ai,core,db}
+    scripts/export_openapi.py   tests/
+/packages/
+  shared-types/            @retention/shared-types — generated from api OpenAPI (pnpm member)
+/docs/                     assignment PDFs + take-home-plan.md + spec.md
 ```
+Full structure & rules: `docs/take-home-plan.md` §9.
 
 ---
 
@@ -140,8 +155,8 @@ past this line.
 
 Not Flutter — **do not run `flutter test`/`flutter analyze`.** For this repo:
 
-- Backend: `uv run pytest`
-- Frontend: `pnpm test` (Vitest + RTL), `pnpm playwright test`
+- Backend: `uv run pytest` (in `apps/api`)
+- Frontend: `pnpm --filter web test` (Vitest + RTL), `pnpm --filter web playwright test`
 - **Teeth step (mandatory before "done"):** run the app, watch the stream render token-by-token, and
   **read the generated pitches** to confirm grounding — no invented plan names or usage numbers.
   Tests catch regressions; only your eyes catch hallucination.
@@ -177,7 +192,8 @@ Subject lowercase, no trailing period, ≤72 chars.
 - **PATCH** — `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `perf`, `ci`.
 
 **Version = single source of truth in code:** on every bump, update `version` in
-`frontend/package.json` and `backend/pyproject.toml` to match the new `vX.Y.Z`.
+`apps/web/package.json` and `apps/api/pyproject.toml` to match the new `vX.Y.Z` (the root
+`package.json` stays private/versionless).
 
 **Tags:** tag milestone releases with `git tag vX.Y.Z`; baseline `v0.1.0` marks the initial scaffold.
 
