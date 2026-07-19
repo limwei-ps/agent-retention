@@ -19,9 +19,15 @@ class Settings(BaseSettings):
 
     # LLM — mock-first; real Gemini behind the flag (see spec §4.9)
     llm_mode: str = "mock"  # "mock" | "gemini"
-    gemini_api_key: str | None = None
     gemini_model_primary: str = "gemini-2.5-pro"
     gemini_model_secondary: str = "gemini-2.5-flash"
+    gemini_timeout_s: float = 30.0  # per-chunk stall timeout → fail over to the next hop
+
+    # Gemini runs on Vertex AI via Application Default Credentials (no API key).
+    # `gcloud auth application-default login` locally; the service-account identity on Cloud Run.
+    # google_cloud_project is required when llm_mode == "gemini".
+    google_cloud_project: str | None = None
+    google_cloud_location: str = "global"
 
     # Streaming pace: 0 in tests; a small delay in dev makes the mock stream visibly (spec §4.10).
     sse_token_chunk_delay_ms: int = 0

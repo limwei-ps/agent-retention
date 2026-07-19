@@ -1,8 +1,9 @@
-"""LLM client abstraction + deterministic mock (spec §4.9).
+"""LLM client abstraction + deterministic mock + real Gemini adapter (spec §4.9).
 
 `LLMClient` is the seam every backend implements. `MockLLM` is the default (tests + deployed demo):
 it produces a grounded pitch deterministically by reading the marker lines that `prompt.build_prompt`
-guarantees, so mock output always passes grounding verification. The real `GeminiLLM` lands in Phase C.
+guarantees, so mock output always passes grounding verification. `GeminiLLM` is the real provider
+(Vertex AI via Application Default Credentials), wired behind `LLM_MODE=gemini` in `llm_provider`.
 """
 
 from __future__ import annotations
@@ -10,7 +11,10 @@ from __future__ import annotations
 import asyncio
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
-from typing import Protocol
+from typing import TYPE_CHECKING, Any, Protocol
+
+if TYPE_CHECKING:  # avoid importing the SDK on the mock/test path
+    from google import genai
 
 # Marker lines emitted by prompt.build_prompt so the mock can echo real facts. Real LLMs ignore
 # these and read the whole prompt.
@@ -98,3 +102,74 @@ class MockLLM:
             f"connection, we'd love to keep you with {plan} at {price}/month for {term}. "
             f"It's our best value for your usage. Ready to renew? Reply and we'll sort it out today."
         )
+
+
+def _usage_from_metadata(meta: Any) -> UsageInfo:
+    """Map a google-genai usage_metadata object to our UsageInfo (defensive: fields may be None)."""
+    return UsageInfo(
+        prompt_tokens=getattr(meta, "prompt_token_count", None) or 0,
+        completion_tokens=getattr(meta, "candidates_token_count", None) or 0,
+    )
+
+
+class GeminiLLM:
+    """Real provider: streams a pitch from Gemini on Vertex AI (auth via ADC).
+
+    The `genai.Client` is injected so the test suite can pass a fake and never touch the network.
+    Every failure mode — connect error, mid-stream error, or a stall longer than `timeout_s` between
+    chunks — is normalized to `ProviderError` so the caller's fallback chain (pro → flash → cached →
+    clean error) fires instead of the stream crashing. Usage tokens come from the provider's
+    `usage_metadata` (delivered on the final chunk); if absent, a rough estimate keeps cost logging
+    honest rather than silently zero.
+    """
+
+    def __init__(
+        self,
+        model_id: str,
+        client: genai.Client,
+        *,
+        timeout_s: float = 30.0,
+        generation_config: Any = None,
+    ) -> None:
+        self.model_id = model_id
+        self._client = client
+        self._timeout = timeout_s
+        self._config = generation_config
+
+    async def generate(self, prompt: str) -> AsyncIterator[StreamEvent]:
+        usage: UsageInfo | None = None
+        streamed_words = 0
+        try:
+            kwargs: dict[str, Any] = {"model": self.model_id, "contents": prompt}
+            if self._config is not None:
+                kwargs["config"] = self._config
+            # Bound the connect and each chunk wait: a stalled hop must fail over, not hang.
+            stream = await asyncio.wait_for(
+                self._client.aio.models.generate_content_stream(**kwargs), timeout=self._timeout
+            )
+            iterator = stream.__aiter__()
+            while True:
+                try:
+                    chunk = await asyncio.wait_for(iterator.__anext__(), timeout=self._timeout)
+                except StopAsyncIteration:
+                    break
+                text = getattr(chunk, "text", None)
+                if text:
+                    streamed_words += len(text.split())
+                    yield TextDelta(text)
+                meta = getattr(chunk, "usage_metadata", None)
+                if meta is not None:
+                    usage = _usage_from_metadata(meta)
+        except TimeoutError as exc:
+            raise ProviderError(f"{self.model_id}: timed out after {self._timeout}s") from exc
+        except ProviderError:
+            raise
+        except Exception as exc:  # noqa: BLE001 - normalize any SDK/API error into a fallback trigger
+            raise ProviderError(f"{self.model_id}: {type(exc).__name__}: {exc}") from exc
+
+        # Guarantee exactly one terminal UsageInfo, even if the provider omitted or zeroed it.
+        if usage is None:
+            usage = UsageInfo(prompt_tokens=max(1, len(prompt.split())), completion_tokens=0)
+        if usage.completion_tokens == 0 and streamed_words > 0:
+            usage = UsageInfo(prompt_tokens=usage.prompt_tokens, completion_tokens=streamed_words)
+        yield usage
