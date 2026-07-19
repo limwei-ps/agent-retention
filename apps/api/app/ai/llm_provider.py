@@ -32,7 +32,10 @@ def get_llm_chain() -> LLMChain:
     """
     if settings.llm_mode == "gemini":
         return _gemini_chain()
-    return LLMChain(hops=(LLMHop("primary", MockLLM()),))
+    # SSE_TOKEN_CHUNK_DELAY_MS paces the mock's token stream so streaming is visible in dev/demo/E2E
+    # (0 in tests keeps them instant).
+    delay_s = settings.sse_token_chunk_delay_ms / 1000
+    return LLMChain(hops=(LLMHop("primary", MockLLM(delay_s=delay_s)),))
 
 
 def _gemini_chain() -> LLMChain:
