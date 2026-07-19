@@ -325,6 +325,10 @@ State these explicitly in the README. Naming them shows production judgment; the
   durable job queue (Cloud Tasks / Pub-Sub / Celery / Arq): decoupled workers, retries with backoff,
   restart survival, and horizontal scale — so a batch keeps running across instance restarts and scales
   independently of the web tier.
+- **List pagination & search at scale.** The customer list uses OFFSET/LIMIT with a stable `id`
+  tiebreaker (correct + fast for the seeded ~60 rows). At large scale, production would switch to
+  keyset/cursor pagination (avoids deep-offset cost and live-insert page drift) and full-text /
+  trigram search (the current `ILIKE '%q%'` can't use a b-tree index). Deferred as a scale tradeoff.
 - **Scale & resilience.** Retry policies with jitter, circuit breakers on the LLM provider,
   multi-region, and load testing the bulk path.
 - **CI/CD.** Automated tests + deploy pipeline on push; here it's manual.

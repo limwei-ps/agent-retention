@@ -11,10 +11,11 @@ from typing import Protocol
 
 from fastapi import Depends
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, defer, selectinload
 
 from app.db.session import get_db
 from app.models.customer import Customer
+from app.models.pitch import Pitch
 
 # Allowed sort keys → model columns (whitelist; never interpolate user input into SQL).
 _SORT_COLUMNS = {
@@ -56,17 +57,30 @@ class SqlCustomerRepository:
         page_size: int,
     ) -> tuple[list[Customer], int]:
         stmt = select(Customer)
-
         if search:
             like = f"%{search}%"
             stmt = stmt.where(Customer.name.ilike(like) | Customer.id.ilike(like))
         if plan:
             stmt = stmt.where(Customer.current_plan_id == plan)
 
+        # Count over the filtered predicate only (before options/order/paging).
         total = self._db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
 
-        column = _SORT_COLUMNS.get(sort, Customer.contract_end_date)
-        stmt = stmt.order_by(column.desc() if order == "desc" else column.asc())
+        # Avoid N+1: batch-load the latest-pitch status for the whole page in one query,
+        # and skip the JSON usage_history the summary never reads.
+        stmt = stmt.options(
+            selectinload(Customer.pitches).load_only(Pitch.status, Pitch.created_at),
+            defer(Customer.usage_history),
+        )
+
+        # Sort by the requested column + a stable `id` tiebreaker so tied values don't
+        # shuffle rows across pages (OFFSET pagination needs a total ordering).
+        primary = _SORT_COLUMNS.get(sort, Customer.contract_end_date)
+
+        def _dir(col):  # noqa: ANN001, ANN202
+            return col.desc() if order == "desc" else col.asc()
+
+        stmt = stmt.order_by(_dir(primary), _dir(Customer.id))
         stmt = stmt.offset((page - 1) * page_size).limit(page_size)
 
         rows = list(self._db.scalars(stmt).all())

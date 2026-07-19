@@ -1,4 +1,6 @@
-from datetime import date
+from sqlalchemy import event
+
+from app.models.pitch import Pitch, PitchStatus
 
 
 def _seed(db, make_customer, rows):
@@ -87,3 +89,49 @@ def test_detail_returns_offer_ladder_and_usage(client, db_session, make_customer
 
 def test_detail_404_for_unknown(client):
     assert client.get("/api/customers/CUST-99999").status_code == 404
+
+
+def test_list_avoids_n_plus_one(client, db_session, make_customer):
+    # 5 customers each with a pitch — a naive lazy load would fire 5 extra queries.
+    for i in range(5):
+        db_session.add(make_customer(id=f"CUST-{i:05d}"))
+        db_session.flush()
+        db_session.add(Pitch(customer_id=f"CUST-{i:05d}", status=PitchStatus.ready, text="x"))
+    db_session.commit()
+
+    engine = db_session.get_bind()
+    count = {"queries": 0}
+
+    def _on_exec(*_args, **_kwargs):
+        count["queries"] += 1
+
+    event.listen(engine, "after_cursor_execute", _on_exec)
+    try:
+        resp = client.get("/api/customers", params={"page_size": 5})
+    finally:
+        event.remove(engine, "after_cursor_execute", _on_exec)
+
+    assert resp.status_code == 200
+    data = resp.json()["data"]
+    assert len(data) == 5
+    assert all(c["latest_pitch_status"] == "ready" for c in data)
+    # count + page + one batched selectin for all pitches ≈ 3 — bounded, not O(rows).
+    assert count["queries"] <= 3
+
+
+def test_pagination_stable_with_tied_sort_values(client, db_session, make_customer):
+    # All identical tenure → the sort column ties; the id tiebreaker must keep paging total.
+    for i in range(6):
+        db_session.add(make_customer(id=f"CUST-{i:05d}", tenure_months=12))
+    db_session.commit()
+
+    seen: list[str] = []
+    for page in (1, 2, 3):
+        body = client.get(
+            "/api/customers",
+            params={"sort": "tenure", "order": "asc", "page": page, "page_size": 2},
+        ).json()
+        seen += [c["id"] for c in body["data"]]
+
+    assert len(seen) == 6
+    assert len(set(seen)) == 6  # no duplicates and no omissions across pages

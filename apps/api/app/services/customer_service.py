@@ -15,13 +15,18 @@ def _plan_ref(plan_id: str) -> PlanRef:
     return PlanRef(id=plan.id, name=plan.name, speed_mbps=plan.speed_mbps, price_myr=plan.price_myr)
 
 
+def _latest_pitch_status(customer: Customer) -> str | None:
+    # Summary needs only the status. Reading just `.status` keeps the list query's
+    # `load_only(status, created_at)` optimization intact (no extra column loads).
+    return customer.pitches[0].status.value if customer.pitches else None
+
+
 def _latest_pitch(customer: Customer) -> PitchRead | None:
-    # `pitches` is ordered created_at desc by the relationship.
+    # Detail needs the full pitch. `pitches` is ordered created_at desc by the relationship.
     return PitchRead.model_validate(customer.pitches[0]) if customer.pitches else None
 
 
 def to_summary(customer: Customer) -> CustomerSummary:
-    latest = _latest_pitch(customer)
     return CustomerSummary(
         id=customer.id,
         name=customer.name,
@@ -29,7 +34,7 @@ def to_summary(customer: Customer) -> CustomerSummary:
         tenure_months=customer.tenure_months,
         avg_monthly_gb=customer.avg_monthly_gb,
         contract_end_date=customer.contract_end_date,
-        latest_pitch_status=latest.status.value if latest else None,
+        latest_pitch_status=_latest_pitch_status(customer),
     )
 
 
