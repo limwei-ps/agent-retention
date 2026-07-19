@@ -1,0 +1,16 @@
+# Normalize line endings: text files are LF in the repo and in the working tree on every OS.
+# Fixes the Windows autocrlf ↔ prettier pre-commit hook conflict (files checked out CRLF then
+# flagged by prettier, which expects LF). See .claude/tracking/lesson.md (2026-07-20).
+* text=auto eol=lf
+
+# Binary assets — never touch line endings.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.ico   binary
+*.woff  binary
+*.woff2 binary
+*.pdf   binary
+*.db    binary
