@@ -8,6 +8,7 @@ Master task list. Mark done with `[x]` and a date; add new tasks in place. Synce
 
 ## Day 1 — Foundations & Spec
 
+- [x] Install official plugins (frontend-design, feature-dev, code-review, commit-commands, security-guidance, playwright, github + superpowers, context7, code-simplifier, claude-md-management); documented in CLAUDE.md §10 — 2026-07-19
 - [x] Convert plan PDF → `docs/take-home-plan.md` (gaps + conventions) — 2026-07-19
 - [x] Set up `CLAUDE.md` backbone + `.claude/tracking/` foundation — 2026-07-19
 - [x] Expand §9 conventions with frontend/backend folder structure — 2026-07-19

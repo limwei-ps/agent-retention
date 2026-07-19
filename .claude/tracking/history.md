@@ -131,3 +131,18 @@ key decisions.
   Package versions unified at 0.2.2 per CLAUDE.md §8.
 - **Deferred to next chunk:** plan-catalog config, models, seeder (customers + offer ladder),
   list/detail/dashboard endpoints, web test setup.
+
+## 2026-07-19 — Adopted official plugin toolchain
+
+- **What:** Documented all enabled official-marketplace plugins in `CLAUDE.md` §10 (mapped to roles),
+  committed `.claude/settings.json` (enabledPlugins manifest), reconciled `docs/take-home-plan.md` §3
+  (points to §10), and marked the Day-1 plugin task done.
+- **Why:** User asked to record the installed plugins as the project's workflow tooling; committing the
+  manifest makes the toolchain reproducible for reviewers.
+- **Plugins:** frontend-design, feature-dev, code-review, commit-commands, security-guidance,
+  playwright, github, superpowers, context7, code-simplifier, claude-md-management. Firebase excluded
+  (not in enabledPlugins; stack is GCP/Gemini).
+- **Version:** bumped all package version files to 0.2.3 (§8 lockstep); updated CLAUDE.md §8
+  `Current version` (was stale at v0.1.0) → v0.2.3.
+- **Files:** `CLAUDE.md`, `.claude/settings.json`, `docs/take-home-plan.md`, `apps/*`,
+  `packages/shared-types/package.json`.

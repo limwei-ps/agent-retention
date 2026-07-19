@@ -197,7 +197,7 @@ Subject lowercase, no trailing period, ≤72 chars.
 
 **Tags:** tag milestone releases with `git tag vX.Y.Z`; baseline `v0.1.0` marks the initial scaffold.
 
-**Current version: v0.1.0.**
+**Current version: v0.2.3.**
 
 **AI attribution ON** (overrides the global no-attribution default): keep the `Co-Authored-By:
 Claude ...` trailer so the git history is transparent about AI assistance, matching the README
@@ -217,3 +217,30 @@ The initial three pre-convention commits are left as-is — history is not rewri
 - **`history.md`** — change log. After every change, append: what changed, why, files, key decisions.
 - **`lesson.md`** — lessons from corrections. Review at session start; add a rule after any user
   correction so the same mistake is prevented.
+
+---
+
+## 10. Tooling & plugins (official marketplace)
+
+Enabled plugins live in `.claude/settings.json` (committed). Each maps to a role in this build:
+
+**Workflow**
+- **feature-dev** — structured feature workflow (code-architect / code-explorer / code-reviewer
+  agents) across the frontend/backend/AI layers.
+- **code-review** — self-review pass before each commit ("clean, well-tested code").
+- **commit-commands** — atomic, conventional, semantic-versioned commits (§8; history is graded).
+- **security-guidance** — production hardening; reinforces the §2 injection guardrail and secret hygiene.
+- **frontend-design** — `apps/web` component structure and visual direction (Day 4).
+
+**Testing · docs · repo**
+- **playwright** — streaming-pitch E2E (Day 5) + browser MCP to watch the live token stream render.
+- **context7** — up-to-date library docs (FastAPI, Next.js, `google-genai`, SQLAlchemy) while implementing.
+- **github** — repo & PR management (the deliverable is a repo link).
+
+**Quality · meta**
+- **superpowers** — TDD, systematic-debugging, and verification-before-completion, applied to the AI layer.
+- **code-simplifier** — post-implementation simplification pass on changed code.
+- **claude-md-management** — keep this `CLAUDE.md` accurate as the project evolves.
+
+**Not used:** `firebase` (appears in the tool list but isn't in `enabledPlugins`) — our stack is GCP
+Cloud Run + `google-genai`, not Firebase.

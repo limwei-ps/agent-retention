@@ -103,6 +103,10 @@ supply-chain risk (thematically fitting given the injection in this brief).
 | Playwright | If you write E2E/frontend tests |
 | GitHub | PR and repo management (deliverable is a repo link) |
 
+> **Status: installed** (see `.claude/settings.json`). All of the above are enabled, plus extras
+> (`superpowers`, `context7`, `code-simplifier`, `claude-md-management`). The authoritative
+> plugin → role mapping lives in **`CLAUDE.md` §10**; this section stays the strategy rationale.
+
 **No plugin designs the AI-reliability layer for you.** Grounding, cache-key design, fallback, and
 backpressure are yours — and they're the interview differentiators. A plugin can scaffold the
 FastAPI streaming endpoint; it can't make the architectural calls.
