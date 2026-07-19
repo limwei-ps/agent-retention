@@ -94,9 +94,11 @@ Master task list. Mark done with `[x]` and a date; add new tasks in place. Synce
 
 ## Gap traceability (folded into Days above)
 
-- `[GAP #1]` `contract_end_date` in model + seed → Day 2
-- `[GAP #2]` bulk progress UI + channel → Day 4
-- `[GAP #3]` regenerate forces cache bypass → Day 3
-- `[GAP #4]` usage sort/filter scalar → Day 2
-- `[GAP #5]` search scope + "this month" boundary/timezone → Day 2
+- `[x] [GAP #1]` `contract_end_date` in model + seed → Day 2 — 2026-07-19
+- `[x] [GAP #2]` bulk progress UI + channel → Day 4 — 2026-07-20 (v0.17.0; SSE-driven poll, X-of-N + per-item)
+- `[x] [GAP #3]` regenerate forces cache bypass → Day 3 — 2026-07-19
+- `[x] [GAP #4]` usage sort/filter scalar → Day 2 — 2026-07-19
+- `[x] [GAP #5]` search scope + "this month" boundary/timezone → Day 2 — 2026-07-19
 - `[x] [GAP #6]` coding conventions pinned (CLAUDE.md + plan §9) — 2026-07-19
+
+All six gaps identified vs. the assignment brief are now closed.
