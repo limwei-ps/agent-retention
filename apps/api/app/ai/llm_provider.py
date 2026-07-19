@@ -51,8 +51,15 @@ def _gemini_chain() -> LLMChain:
         project=settings.google_cloud_project,
         location=settings.google_cloud_location,
     )
-    # Low temperature + bounded output keep the pitch grounded and tight (verification catches drift).
-    config = types.GenerateContentConfig(temperature=0.4, max_output_tokens=512)
+    # Gemini 2.5 are *thinking* models: thinking tokens count against max_output_tokens, so a tight
+    # cap (e.g. 512) is spent entirely on thinking and truncates the visible pitch (finish=MAX_TOKENS)
+    # before it can state the offer — which then fails grounding verification. Give the pitch ample
+    # room and bound thinking so cost/latency stay predictable. Low temperature keeps it grounded.
+    config = types.GenerateContentConfig(
+        temperature=0.4,
+        max_output_tokens=2048,
+        thinking_config=types.ThinkingConfig(thinking_budget=512),
+    )
     timeout = settings.gemini_timeout_s
 
     def hop(name: str, model_id: str) -> LLMHop:

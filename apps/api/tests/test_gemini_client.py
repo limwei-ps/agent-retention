@@ -159,6 +159,25 @@ async def test_gemini_mode_builds_two_hop_chain(monkeypatch: pytest.MonkeyPatch)
     assert chain.hops[1].client.model_id == settings.gemini_model_secondary
 
 
+async def test_gemini_chain_gives_thinking_models_output_headroom(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Regression guard for a live-teeth-step finding: Gemini 2.5 are *thinking* models, and thinking
+    # tokens count against max_output_tokens. A tight cap (e.g. 512) is spent on thinking and truncates
+    # the pitch before it states the offer, failing grounding verification. Keep ample headroom and an
+    # explicit thinking budget. Unit tests with fakes can't catch this — hence the guard.
+    import google.genai as genai_mod
+
+    monkeypatch.setattr(settings, "llm_mode", "gemini")
+    monkeypatch.setattr(settings, "google_cloud_project", "test-project")
+    monkeypatch.setattr(genai_mod, "Client", lambda **kwargs: _client())
+
+    client = get_llm_chain().hops[0].client
+    assert isinstance(client, GeminiLLM)
+    assert client._config.max_output_tokens >= 1024
+    assert client._config.thinking_config is not None
+
+
 def test_default_mode_is_mock_single_hop() -> None:
     chain = get_llm_chain()  # settings default llm_mode == "mock"
     assert len(chain.hops) == 1
