@@ -99,9 +99,10 @@ All responses are Pydantic DTOs. Envelope for lists: `{ data, page, page_size, t
 | `GET /api/customers` | list | `search` (name/id), `plan`, `sort` (tenure\|avg_gb\|contract_end_date), `order`, `page`, `page_size` |
 | `GET /api/customers/{id}` | detail | → customer + usage_history + offer ladder + latest pitch |
 | `GET /api/dashboard/summary` | dashboard | → count expiring **this month** grouped by plan tier |
-| `POST /api/customers/{id}/pitch` | generate (stream) | body `{ force?: bool }`; **SSE** token stream; `force` = cache bypass |
-| `POST /api/pitches/bulk` | bulk start | body `{ filter }` (same shape as list) → `{ batch_id }` |
-| `GET /api/pitches/bulk/{batch_id}` | bulk progress | **SSE** or poll → `{ total, done, succeeded, failed, items[] }` |
+| `POST /api/customers/{id}/pitch` | generate (foreground stream) | body `{ force?: bool }`; **SSE** token stream, generated in-request; `force` = cache bypass |
+| `POST /api/pitches/bulk` | bulk start (background) | body `{ filter }`; starts a **BackgroundTask** semaphore fan-out; returns `{ batch_id }`; per-item status persisted |
+| `GET /api/pitches/bulk/{batch_id}/stream` | bulk progress (**SSE**) | live per-item progress events from the running task |
+| `GET /api/pitches/bulk/{batch_id}` | bulk status (poll / reconnect) | DB-persisted snapshot `{ total, done, succeeded, failed, items[] }` |
 | `GET /api/health` | health | → `{ status, llm_mode }` |
 
 **"This month"** = server-local calendar month `[first_day, last_day]`; timezone fixed in config
@@ -157,6 +158,23 @@ Gemini model id in config + README.
 ### 4.9 LLM mode
 `LLM_MODE=mock|gemini`. **Mock** = deterministic, grounded generator (echoes the recommended offer)
 — used in tests and as the deployed default. **Gemini** via `google-genai` behind the flag.
+
+### 4.10 Execution model (single vs. long-running bulk)
+- **Single pitch = foreground SSE**, generated in-request so the agent watches tokens stream. No
+  background job — streaming is the whole point. Cache-hit replays stored text as a stream.
+- **Bulk = FastAPI `BackgroundTasks` + SSE.** `POST /pitches/bulk` starts a background semaphore
+  fan-out (§4.5) and returns `{ batch_id }` immediately. The task publishes progress to an **in-process
+  channel** (an `asyncio.Queue` keyed by `batch_id`) and **persists each per-item result to SQLite** as
+  it completes. The client watches live progress over a **separate SSE channel**
+  (`GET /pitches/bulk/{batch_id}/stream`); the DB rows are the durable snapshot so a reconnecting or
+  late-joining client catches up via `GET /pitches/bulk/{batch_id}`. A mid-batch failure is recorded
+  per item and never aborts the batch (§4.7).
+- **Cloud Run deploy note:** `BackgroundTasks` run *after* the response, and Cloud Run throttles CPU
+  once the response is sent. The batch therefore needs **CPU-always-allocated** (or `min-instances=1`
+  with an instance kept warm via a Cloud Scheduler ping) so the fan-out isn't throttled — an
+  operational setting, documented in the README deploy section.
+- The production-grade alternative (a durable job queue) is **out of scope by timeline** — see
+  `docs/take-home-plan.md` §8.
 
 ---
 

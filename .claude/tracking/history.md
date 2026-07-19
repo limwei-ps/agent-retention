@@ -97,3 +97,22 @@ key decisions.
 - **Key decisions:** pnpm workspaces (not Turborepo — avoid gold-plating); version source of truth =
   `apps/web/package.json` + `apps/api/pyproject.toml`; generated `shared-types` committed so `apps/web`
   builds without Python.
+
+## 2026-07-19 — Set AI execution model (single vs bulk)
+
+- **What:** Made the generation execution model explicit in `docs/spec.md` (new §4.10, reworded §3
+  bulk rows into start / SSE stream / poll) and added an Out-of-Scope bullet in
+  `docs/take-home-plan.md` §8.
+- **Why:** The bulk endpoints were ambiguous about foreground vs background execution.
+- **Key decisions (after discussion):**
+  - Single pitch = **foreground SSE**, generated in-request (streaming is required — no background job).
+  - Bulk = **FastAPI `BackgroundTasks` + SSE**: `POST /pitches/bulk` returns `{ batch_id }`; the task
+    runs a semaphore fan-out, publishes progress to an in-process channel (SSE via
+    `GET /pitches/bulk/{batch_id}/stream`), and persists per-item status to SQLite (poll/reconnect via
+    `GET /pitches/bulk/{batch_id}`).
+  - **Cloud Run caveat owned operationally:** BackgroundTasks run after the response and Cloud Run
+    throttles CPU then, so the deploy uses CPU-always-allocated / `min-instances=1` kept warm via Cloud
+    Scheduler (user's call).
+  - Durable job queue (Cloud Tasks / Pub-Sub / Celery / Arq) is **out of scope by timeline**, justified
+    in plan §8.
+- **Files:** `docs/spec.md`, `docs/take-home-plan.md` (§8).

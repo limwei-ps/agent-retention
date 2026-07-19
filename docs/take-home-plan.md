@@ -314,6 +314,13 @@ State these explicitly in the README. Naming them shows production judgment; the
   delivery tracking and outcome feedback (did the recontract convert?).
 - **A/B testing & feedback loop.** Measure which pitch styles actually retain customers and feed
   that back into prompts/templates — the real "innovation" surface.
+- **Async job orchestration (durable bulk generation).** Bulk here runs in-process via FastAPI
+  `BackgroundTasks` + an SSE progress channel, with per-item status persisted to SQLite — a deliberate,
+  **timeline-driven** choice. It relies on the Cloud Run instance having CPU allocated after the
+  response (CPU-always-allocated / `min-instances=1`, kept warm via Cloud Scheduler). Production wants a
+  durable job queue (Cloud Tasks / Pub-Sub / Celery / Arq): decoupled workers, retries with backoff,
+  restart survival, and horizontal scale — so a batch keeps running across instance restarts and scales
+  independently of the web tier.
 - **Scale & resilience.** Retry policies with jitter, circuit breakers on the LLM provider,
   multi-region, and load testing the bulk path.
 - **CI/CD.** Automated tests + deploy pipeline on push; here it's manual.
