@@ -155,14 +155,41 @@ single-flight coalescing, grounding smoke check) + key UI paths + one streaming 
 
 ## 8. Commit & versioning
 
-- **Conventional commits**, frequent and incremental — the git history is graded, so it should tell
-  the story of how the work was done. No single giant "implement everything" commit.
-- Format: `<type>: <description>` (types: feat, fix, refactor, docs, test, chore, perf, ci).
-- **Semver** starting **v0.1.0**, tracked via git tags + `frontend/package.json` +
-  `backend/pyproject.toml` (adapts the global `pubspec.yaml` rule).
-- **AI attribution ON** (overrides the global no-attribution default): commits carry a
-  `Co-Authored-By: Claude ...` trailer so the git history is transparent about AI assistance,
-  matching the README disclosure.
+**Semantic-versioned conventional commits.** Every commit subject is prefixed with the *resulting*
+version. Frequent and incremental — the git history is graded, so it should tell the story of how the
+work was done. No single giant "implement everything" commit.
+
+**Format:**
+```
+vX.Y.Z: <type>: <short description>
+
+<optional body>
+
+Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>
+```
+Subject lowercase, no trailing period, ≤72 chars.
+
+**Types:** feat, fix, docs, style, refactor, test, chore, perf, ci.
+
+**SemVer bump rules:**
+- **MAJOR** — breaking change; add `!` after the type (e.g. `feat!:`, `refactor!:`).
+- **MINOR** — new feature (`feat`).
+- **PATCH** — `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `perf`, `ci`.
+
+**Version = single source of truth in code:** on every bump, update `version` in
+`frontend/package.json` and `backend/pyproject.toml` to match the new `vX.Y.Z`.
+
+**Tags:** tag milestone releases with `git tag vX.Y.Z`; baseline `v0.1.0` marks the initial scaffold.
+
+**Current version: v0.1.0.**
+
+**AI attribution ON** (overrides the global no-attribution default): keep the `Co-Authored-By:
+Claude ...` trailer so the git history is transparent about AI assistance, matching the README
+disclosure.
+
+The initial three pre-convention commits are left as-is — history is not rewritten.
+
+**Examples:** `v0.2.0: feat: add customer list endpoint` · `v0.2.1: fix: correct expiry month boundary`
 
 ---
 

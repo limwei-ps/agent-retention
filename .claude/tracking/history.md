@@ -74,3 +74,12 @@ key decisions.
   - **Actually deploy** to GCP Cloud Run (mock-LLM default so demo clicks are free).
   - **Plan catalog:** MYR fibre 100/300/500/1000 @ RM 99/129/159/199 (fixed, single source).
   - Conventions single-sourced in plan §9; CLAUDE.md links to it.
+
+## 2026-07-19 — Adopted semantic-versioned commit convention
+
+- **What:** Rewrote `CLAUDE.md` §8 to require version-prefixed commits (`vX.Y.Z: type: desc`) with
+  SemVer bump rules, version-file sync (`package.json`/`pyproject.toml`), and milestone tags. Tagged
+  `v0.1.0` at the current scaffold HEAD as the baseline.
+- **Why:** User wants git commits to carry a semantic version, mirroring their global scheme (adapted).
+- **Files:** `CLAUDE.md` (§8), `docs/take-home-plan.md` (§9 cross-cutting points at §8), `tasks.md`
+  (Day-2 version-file task). No history rewrite — the initial 3 commits stay as-is.

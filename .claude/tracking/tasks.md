@@ -18,6 +18,7 @@ Master task list. Mark done with `[x]` and a date; add new tasks in place. Synce
 
 ## Day 2 — Data & Backend Core
 
+- [ ] Set `version: 0.1.0` in `frontend/package.json` + `backend/pyproject.toml` when scaffolding (SemVer source of truth — CLAUDE.md §8)
 - [ ] Plan catalog config module — MYR fibre 100/300/500/1000 @ 99/129/159/199 (single source for seed/offer/grounding)
 - [ ] Seed 50–100 customers (Faker): plan, tenure, `usage_history` (12mo), `contract_end_date` clustered this month `[GAP #1]`; usage archetypes (flat-low / climbing / heavy)
 - [ ] Derived usage scalars: `avg_monthly_gb` + `last_month_gb` `[GAP #4]`

@@ -405,4 +405,4 @@ tests/                       pytest (AI layer + key paths)
 - Docker + docker-compose (one compose file, reused for the Cloud Run deploy in §7).
 - `.env` in `.gitignore` from commit one; key via env / Secret Manager.
 - **Mock-LLM default** on the deployed URL (§7 strategic note).
-- Frequent, incremental, conventional-style commits.
+- Frequent, incremental, **semantic-versioned** commits (`vX.Y.Z: type: desc`) — see `CLAUDE.md` §8.
