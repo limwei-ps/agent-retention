@@ -169,6 +169,12 @@ Gemini model id in config + README.
   (`GET /pitches/bulk/{batch_id}/stream`); the DB rows are the durable snapshot so a reconnecting or
   late-joining client catches up via `GET /pitches/bulk/{batch_id}`. A mid-batch failure is recorded
   per item and never aborts the batch (§4.7).
+- **Single-instance affinity:** the progress `asyncio.Queue` is **in-process**, so `/stream` only
+  delivers live events from the instance actually running the batch. This holds under `min-instances=1`
+  / `max-instances=1` (our deploy). If it ever scales beyond one instance, `/stream` must **fall back to
+  tailing the DB snapshot** (poll the persisted per-item rows) instead of the in-memory queue — the
+  implementation degrades to that path automatically. Cross-instance live fan-out needs a shared broker
+  (Redis pub/sub) — part of the durable-queue upgrade below.
 - **Cloud Run deploy note:** `BackgroundTasks` run *after* the response, and Cloud Run throttles CPU
   once the response is sent. The batch therefore needs **CPU-always-allocated** (or `min-instances=1`
   with an instance kept warm via a Cloud Scheduler ping) so the fan-out isn't throttled — an
