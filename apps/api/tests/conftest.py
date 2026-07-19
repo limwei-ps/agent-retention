@@ -15,9 +15,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.db.session import Base, get_db
+from app.db.session import Base, get_db, get_session_factory
 from app.main import app
 from app.models.customer import Customer
+from app.services.batch_registry import BatchRegistry
 
 
 @pytest.fixture
@@ -42,6 +43,37 @@ def client(db_session: Session) -> Iterator[TestClient]:
     app.dependency_overrides[get_db] = override_get_db
     yield TestClient(app)
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def bulk_client(tmp_path) -> Iterator[tuple[TestClient, sessionmaker]]:
+    """A client for bulk tests backed by a temp-file SQLite so the request session and the
+    background-task worker sessions each get their own connection (mirrors production pooling).
+
+    Overrides both `get_db` and `get_session_factory` onto that engine, and installs a fresh
+    `BatchRegistry` on the app so batches don't leak across tests. Yields (client, session_factory)
+    so the test can seed customers directly.
+    """
+    engine = create_engine(
+        f"sqlite:///{tmp_path / 'api.db'}", connect_args={"check_same_thread": False}
+    )
+    Base.metadata.create_all(engine)
+    factory = sessionmaker(bind=engine)
+
+    def override_get_db() -> Iterator[Session]:
+        db = factory()
+        try:
+            yield db
+        finally:
+            db.close()
+
+    app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_session_factory] = lambda: factory
+    app.state.batch_registry = BatchRegistry()
+    try:
+        yield TestClient(app), factory
+    finally:
+        app.dependency_overrides.clear()
 
 
 @pytest.fixture

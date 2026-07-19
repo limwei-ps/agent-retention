@@ -92,10 +92,115 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/pitches/bulk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generate Pitches Bulk */
+        post: operations["generate_pitches_bulk_api_pitches_bulk_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pitches/bulk/{batch_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Bulk Status */
+        get: operations["get_bulk_status_api_pitches_bulk__batch_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pitches/bulk/{batch_id}/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stream Bulk Status */
+        get: operations["stream_bulk_status_api_pitches_bulk__batch_id__stream_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** BulkBatchCreated */
+        BulkBatchCreated: {
+            /** Batch Id */
+            batch_id: number;
+            /** Total */
+            total: number;
+        };
+        /** BulkBatchStatus */
+        BulkBatchStatus: {
+            /** Batch Id */
+            batch_id: number;
+            /** Total */
+            total: number;
+            /** Completed */
+            completed: number;
+            /** Succeeded */
+            succeeded: number;
+            /** Failed */
+            failed: number;
+            /** Running */
+            running: number;
+            /** Pending */
+            pending: number;
+            /** Complete */
+            complete: boolean;
+            /** Live */
+            live: boolean;
+            /** Items */
+            items: components["schemas"]["BulkItemStatus"][];
+        };
+        /** BulkItemStatus */
+        BulkItemStatus: {
+            /** Customer Id */
+            customer_id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "running" | "succeeded" | "failed";
+            /** Pitch Id */
+            pitch_id?: number | null;
+            /** Error */
+            error?: string | null;
+        };
+        /** BulkPitchRequest */
+        BulkPitchRequest: {
+            /** Customer Ids */
+            customer_ids: string[];
+            /**
+             * Force
+             * @default false
+             */
+            force: boolean;
+        };
         /**
          * CustomerDetail
          * @description Full detail: customer info + usage history + offer ladder + latest pitch.
@@ -408,6 +513,101 @@ export interface operations {
                 "application/json": components["schemas"]["PitchGenerateRequest"] | null;
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_pitches_bulk_api_pitches_bulk_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkPitchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkBatchCreated"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_bulk_status_api_pitches_bulk__batch_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                batch_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkBatchStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stream_bulk_status_api_pitches_bulk__batch_id__stream_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                batch_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {

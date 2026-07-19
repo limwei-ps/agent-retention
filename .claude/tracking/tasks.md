@@ -50,8 +50,16 @@ Master task list. Mark done with `[x]` and a date; add new tasks in place. Synce
 - [x] Token/cost logging (structured JSON per call) — 2026-07-19
 - [x] Review pass (code-review + database-reviewer): fixed single-flight-failure crash, stale-cache key, indexes/WAL/tiebreaker — 2026-07-19
 
-### Phase B/C — pending (after checkpoint)
-- [ ] Bulk generation: semaphore cap + per-item success/failure tracking + SSE progress
+### Phase B — bulk generation (done)
+- [x] `PitchService.generate` — non-streaming outcome adapter over `stream_pitch` (reuses cache/single-flight/fallback/verify/cost) — 2026-07-19
+- [x] `PitchBatch` model + `batch_repository` (persists customer_ids/total for DB-snapshot fallback; no `Pitch.batch_id` — cache hits make it unreliable) — 2026-07-19
+- [x] In-memory `BatchRegistry` (live X-of-N; `asyncio.Condition` + version counter for reconnect-safe SSE) — 2026-07-19
+- [x] `bulk_pitch_service.run_batch` — `asyncio.Semaphore(bulk_concurrency)` fan-out; per-item failure isolation; own session per worker — 2026-07-19
+- [x] Bulk routes: `POST /pitches/bulk` (BackgroundTasks) + `GET /pitches/bulk/{id}` poll + `GET /pitches/bulk/{id}/stream` SSE w/ DB fallback — 2026-07-19
+- [x] Tests: all-succeed, partial-failure isolation, semaphore cap, DB fallback, dedup, validation (21 new) — 2026-07-19
+- [x] Teeth step: live POST/stream/poll; 3 succeed + 1 bogus fails in isolation; pitch grounded — 2026-07-19
+
+### Phase C — pending (after checkpoint)
 - [ ] Swap in real Gemini behind the flag; read outputs to confirm no hallucination
 - [ ] Commit each capability separately
 

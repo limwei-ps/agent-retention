@@ -194,3 +194,35 @@ key decisions.
   `Current version` (was stale at v0.1.0) → v0.2.3.
 - **Files:** `CLAUDE.md`, `.claude/settings.json`, `docs/take-home-plan.md`, `apps/*`,
   `packages/shared-types/package.json`.
+
+## 2026-07-19 — Day 3 Phase B: bulk pitch generation
+
+- **What:** Bulk generation over N customers — `BackgroundTasks` fan-out with live X-of-N progress,
+  per-item failure isolation, and a concurrency cap. New: `models/batch.py` (`PitchBatch`),
+  `repositories/batch_repository.py`, `services/batch_registry.py` (in-memory progress,
+  `asyncio.Condition` + version counter), `services/bulk_pitch_service.py` (`run_batch` semaphore
+  fan-out). Extended: `PitchService.generate` (non-streaming outcome adapter over `stream_pitch`),
+  `db/session.py::get_session_factory`, bulk DTOs in `schemas/pitch.py`, three bulk routes in
+  `api/pitches.py`, `app.state.batch_registry` in `main.py`.
+- **Why:** CLAUDE.md §4 graded core — "failure handling" (per-item success/failure, live progress) and
+  "rate limiting / backpressure" (semaphore). Execution model per spec §4.10 (BackgroundTasks + SSE).
+- **Key decisions:**
+  - **Reuse, not duplication:** `generate()` drains `stream_pitch`, so bulk inherits cache,
+    single-flight, fallback, verify+regenerate, and cost logging with zero copied logic.
+  - **Own session per worker:** BackgroundTasks outlive the request session, so each worker opens its
+    own session (via injected `get_session_factory`) and re-fetches its customer — avoids detached-ORM
+    bugs and gives correct per-worker concurrency under WAL.
+  - **Registry = source of truth for live progress;** minimal `PitchBatch` table backs a best-effort
+    DB reconstruction (`live=false`) when the registry no longer holds a batch (restart/eviction).
+  - **No `Pitch.batch_id`** (deviates from the original sketch): cache-hit items reuse old rows, so the
+    column would be unreliable for progress and would force a param through the shared persist path.
+- **Tests:** 21 new (generate outcome ×3, batch_repository ×2, registry ×5, bulk service ×4 incl.
+  semaphore-cap proof, bulk endpoint ×7). Bulk unit/endpoint tests use a temp-file SQLite so workers
+  get independent connections (real concurrency, unlike the in-memory StaticPool). Suite 47 → 68.
+- **Teeth step:** live server — POST 3 real + 1 bogus id → 3 succeeded, 1 `customer not found`
+  (isolation); SSE stream emitted `progress` → `done`; read a pitch (grounded: real plan/price/name);
+  structured cost log line present.
+- **Verification:** `uv run pytest` 68 pass; `pnpm lint`/`format:check`/`typecheck` green;
+  `pnpm gen:types` regenerated (`pitches/bulk` paths present in `shared-types`).
+- **Commits:** `v0.10.0` (generate + batch model/repo/registry foundation), `v0.11.0` (bulk fan-out
+  service), `v0.12.0` (bulk routes + schemas + wiring + regenerated types). §8 lockstep version bumps.
