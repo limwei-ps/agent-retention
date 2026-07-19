@@ -46,11 +46,38 @@ class _Terminal:
     stale: bool = False  # True when serving a last-cached fallback (degraded)
 
 
+@dataclass(frozen=True)
+class GenerateOutcome:
+    """Non-streaming result of a single generation (used by bulk fan-out)."""
+
+    ok: bool
+    pitch_id: int | None = None
+    stale: bool = False  # served from a degraded last-cached fallback
+
+
 class PitchService:
     def __init__(self, repo: PitchRepository, chain: LLMChain, single_flight: SingleFlight) -> None:
         self._repo = repo
         self._chain = chain
         self._sf = single_flight
+
+    async def generate(
+        self, customer: Customer, ladder: OfferLadder, *, force: bool = False
+    ) -> GenerateOutcome:
+        """Run a full generation and return the terminal outcome, discarding the token stream.
+
+        A thin adapter over `stream_pitch` so bulk generation inherits the entire reliability path
+        (cache, single-flight, fallback, verify+regenerate, cost logging) with no duplicated logic.
+        """
+        done: dict | None = None
+        async for event in self.stream_pitch(customer, ladder, force=force):
+            if event.event == "done":
+                done = event.data
+            elif event.event == "error":
+                return GenerateOutcome(ok=False)
+        if done is None:  # stream ended without a terminal event (shouldn't happen)
+            return GenerateOutcome(ok=False)
+        return GenerateOutcome(ok=True, pitch_id=done["pitch_id"], stale=done.get("stale", False))
 
     async def stream_pitch(
         self, customer: Customer, ladder: OfferLadder, *, force: bool = False

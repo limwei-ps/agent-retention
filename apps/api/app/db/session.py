@@ -45,3 +45,13 @@ def get_db() -> Iterator[Session]:
         yield db
     finally:
         db.close()
+
+
+def get_session_factory() -> sessionmaker[Session]:
+    """Return the session factory itself (DI target).
+
+    Background tasks outlive the request session, so they must open their own sessions rather than
+    reuse the request-scoped one. Exposing the factory via DI lets tests point bulk workers at a
+    temp-file engine (see conftest `bulk_client`).
+    """
+    return SessionLocal

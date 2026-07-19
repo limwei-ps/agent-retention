@@ -145,6 +145,42 @@ async def test_single_flight_coalesces_concurrent_requests(db_session, make_cust
     assert _pitch_count(db_session) == 1
 
 
+async def test_generate_returns_outcome_and_persists(db_session, make_customer):
+    customer, ladder = _customer(db_session, make_customer)
+    svc = _service(db_session, _chain(("primary", MockLLM())))
+
+    outcome = await svc.generate(customer, ladder)
+
+    assert outcome.ok is True
+    assert outcome.pitch_id is not None
+    assert outcome.stale is False
+    assert _pitch_count(db_session) == 1
+
+
+async def test_generate_cache_hit_reuses_row(db_session, make_customer):
+    customer, ladder = _customer(db_session, make_customer)
+    client = CountingLLM()
+    svc = _service(db_session, _chain(("primary", client)))
+
+    await svc.generate(customer, ladder)  # miss
+    outcome = await svc.generate(customer, ladder)  # hit → replay, no new row
+
+    assert outcome.ok is True
+    assert client.calls == 1
+    assert _pitch_count(db_session) == 1
+
+
+async def test_generate_reports_failure(db_session, make_customer):
+    customer, ladder = _customer(db_session, make_customer)
+    svc = _service(db_session, _chain(("primary", MockLLM(fail=True))))
+
+    outcome = await svc.generate(customer, ladder)
+
+    assert outcome.ok is False
+    assert outcome.pitch_id is None
+    assert _pitch_count(db_session) == 0
+
+
 async def test_single_flight_coalesced_failure_yields_clean_error(db_session, make_customer):
     # Two concurrent requests, every hop fails, no prior cache → both get a clean error (no crash).
     customer, ladder = _customer(db_session, make_customer)
