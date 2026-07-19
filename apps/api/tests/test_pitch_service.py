@@ -51,7 +51,10 @@ def _customer(db_session, make_customer, **kw):
     db_session.add(customer)
     db_session.commit()
     ladder = build_offer_ladder(
-        customer.current_plan_id, customer.monthly_price, customer.tenure_months, customer.usage_archetype
+        customer.current_plan_id,
+        customer.monthly_price,
+        customer.tenure_months,
+        customer.usage_archetype,
     )
     return customer, ladder
 
@@ -121,7 +124,9 @@ async def test_falls_back_to_secondary_on_provider_error(db_session, make_custom
 
 async def test_all_hops_fail_no_cache_yields_error(db_session, make_customer):
     customer, ladder = _customer(db_session, make_customer)
-    events = await _run(_service(db_session, _chain(("primary", MockLLM(fail=True)))), customer, ladder)
+    events = await _run(
+        _service(db_session, _chain(("primary", MockLLM(fail=True)))), customer, ladder
+    )
 
     assert events[-1].event == "error"
     assert _pitch_count(db_session) == 0

@@ -10,10 +10,23 @@
     "dev:web": "pnpm --filter web dev",
     "dev:api": "uv run --project apps/api uvicorn app.main:app --reload --port 8000",
     "build": "pnpm --filter web build",
-    "lint": "pnpm --filter web lint",
+    "gen:types": "uv run --project apps/api python apps/api/scripts/export_openapi.py > packages/shared-types/openapi.json && pnpm exec openapi-typescript packages/shared-types/openapi.json -o packages/shared-types/src/schema.ts",
+    "lint": "pnpm lint:web && pnpm lint:api",
+    "lint:web": "pnpm --filter web lint",
+    "lint:api": "cd apps/api && uv run ruff check app tests",
+    "lint:fix": "pnpm --filter web lint --fix && cd apps/api && uv run ruff check --fix app tests",
+    "format": "pnpm format:api && pnpm format:web",
+    "format:api": "cd apps/api && uv run ruff format app tests scripts",
+    "format:web": "pnpm --filter web format",
+    "format:check": "pnpm format:api:check && pnpm format:web:check",
+    "format:api:check": "cd apps/api && uv run ruff format --check app tests scripts",
+    "format:web:check": "pnpm --filter web format:check",
+    "typecheck": "pnpm typecheck:web && pnpm typecheck:api",
+    "typecheck:web": "pnpm --filter web typecheck",
+    "typecheck:api": "cd apps/api && uv run mypy app",
     "test:web": "pnpm --filter web test",
-    "test:api": "uv run --project apps/api pytest",
-    "gen:types": "uv run --project apps/api python apps/api/scripts/export_openapi.py > packages/shared-types/openapi.json && pnpm exec openapi-typescript packages/shared-types/openapi.json -o packages/shared-types/src/schema.ts"
+    "test:api": "cd apps/api && uv run pytest",
+    "prepare": "git config core.hooksPath .githooks || true"
   },
   "devDependencies": {
     "openapi-typescript": "^7.4.1"

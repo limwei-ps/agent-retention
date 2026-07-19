@@ -28,9 +28,7 @@ class VerificationResult:
 def verify_grounding(text: str, ladder: OfferLadder, current_price: int) -> VerificationResult:
     catalog_names = {p.name for p in CATALOG}
     allowed_amounts = (
-        {current_price}
-        | {p.price_myr for p in CATALOG}
-        | {r.monthly_price for r in ladder.rungs}
+        {current_price} | {p.price_myr for p in CATALOG} | {r.monthly_price for r in ladder.rungs}
     )
 
     found_amounts = {int(m) for m in _AMOUNT_RE.findall(text)}

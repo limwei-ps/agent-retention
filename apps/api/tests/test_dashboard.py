@@ -14,7 +14,9 @@ def test_summary_counts_expiring_this_month_by_tier(client, db_session, make_cus
             make_customer(id="CUST-1", plan="fibre_100", contract_end_date=in_month),
             make_customer(id="CUST-2", plan="fibre_100", contract_end_date=in_month),
             make_customer(id="CUST-3", plan="fibre_500", contract_end_date=in_month),
-            make_customer(id="CUST-4", plan="fibre_500", contract_end_date=before_month),  # excluded
+            make_customer(
+                id="CUST-4", plan="fibre_500", contract_end_date=before_month
+            ),  # excluded
         ]
     )
     db_session.commit()

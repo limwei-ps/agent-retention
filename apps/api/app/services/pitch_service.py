@@ -134,8 +134,14 @@ class PitchService:
                 result = verify_grounding(text, ctx.ladder, ctx.monthly_price)
                 if result.ok:
                     pitch = self._persist(customer, key, hop.client.model_id, text, usage)
-                    self._log(customer, pitch, cache_hit=False, hop=hop.name, started=started,
-                              outcome="generated")
+                    self._log(
+                        customer,
+                        pitch,
+                        cache_hit=False,
+                        hop=hop.name,
+                        started=started,
+                        outcome="generated",
+                    )
                     yield _Terminal(pitch)
                     return
                 if attempt == 1:
@@ -149,15 +155,24 @@ class PitchService:
             yield SseEvent("fallback", {"hop": "cached"})
             for event in self._token_events(cached.text):
                 yield event
-            self._log(customer, cached, cache_hit=True, hop="cached", started=started,
-                      outcome="last_cached")
+            self._log(
+                customer,
+                cached,
+                cache_hit=True,
+                hop="cached",
+                started=started,
+                outcome="last_cached",
+            )
             yield _Terminal(cached, stale=True)
             return
 
         logger.warning(
             "pitch generation failed",
-            extra={"ctx_customer_id": customer.id, "ctx_outcome": "failed",
-                   "ctx_latency_ms": round((time.monotonic() - started) * 1000, 1)},
+            extra={
+                "ctx_customer_id": customer.id,
+                "ctx_outcome": "failed",
+                "ctx_latency_ms": round((time.monotonic() - started) * 1000, 1),
+            },
         )
         yield _Terminal(None)
 
@@ -203,7 +218,13 @@ class PitchService:
         )
 
     def _log(
-        self, customer: Customer, pitch: Pitch, *, cache_hit: bool, hop: str, started: float,
+        self,
+        customer: Customer,
+        pitch: Pitch,
+        *,
+        cache_hit: bool,
+        hop: str,
+        started: float,
         outcome: str,
     ) -> None:
         logger.info(

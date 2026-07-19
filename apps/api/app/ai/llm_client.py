@@ -82,7 +82,9 @@ class MockLLM:
                 await asyncio.sleep(self._delay)
             yield TextDelta(word if index == 0 else f" {word}")
 
-        yield UsageInfo(prompt_tokens=max(1, len(prompt.split())), completion_tokens=completion_tokens)
+        yield UsageInfo(
+            prompt_tokens=max(1, len(prompt.split())), completion_tokens=completion_tokens
+        )
 
     def _compose(self, name: str, offer: str) -> str:
         parts = [p.strip() for p in offer.split("|")] if offer else []

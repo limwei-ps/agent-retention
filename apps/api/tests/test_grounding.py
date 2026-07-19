@@ -24,7 +24,9 @@ def test_buckets() -> None:
 def test_cache_key_is_deterministic(make_customer) -> None:
     a = _ctx(make_customer)
     b = _ctx(make_customer)
-    assert cache_key(a, "mock", PROMPT_TEMPLATE_VERSION) == cache_key(b, "mock", PROMPT_TEMPLATE_VERSION)
+    assert cache_key(a, "mock", PROMPT_TEMPLATE_VERSION) == cache_key(
+        b, "mock", PROMPT_TEMPLATE_VERSION
+    )
 
 
 def test_cache_key_changes_with_model_and_template(make_customer) -> None:

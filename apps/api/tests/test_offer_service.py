@@ -10,7 +10,9 @@ def _prices_in_catalog_range(ladder) -> bool:
 
 
 def test_mid_tier_has_three_rungs_with_recommended_in_rungs() -> None:
-    ladder = build_offer_ladder("fibre_300", monthly_price=129, tenure_months=12, archetype="climbing")
+    ladder = build_offer_ladder(
+        "fibre_300", monthly_price=129, tenure_months=12, archetype="climbing"
+    )
     types = [r.type for r in ladder.rungs]
     assert types == ["retain", "value_upgrade", "upsell"]
     assert ladder.recommended in types
@@ -22,12 +24,16 @@ def test_heavy_usage_recommends_upsell() -> None:
 
 
 def test_climbing_usage_recommends_value_upgrade() -> None:
-    ladder = build_offer_ladder("fibre_100", monthly_price=99, tenure_months=6, archetype="climbing")
+    ladder = build_offer_ladder(
+        "fibre_100", monthly_price=99, tenure_months=6, archetype="climbing"
+    )
     assert ladder.recommended == "value_upgrade"
 
 
 def test_flat_low_recommends_retain() -> None:
-    ladder = build_offer_ladder("fibre_300", monthly_price=129, tenure_months=6, archetype="flat_low")
+    ladder = build_offer_ladder(
+        "fibre_300", monthly_price=129, tenure_months=6, archetype="flat_low"
+    )
     assert ladder.recommended == "retain"
 
 
@@ -37,7 +43,9 @@ def test_high_tenure_overrides_to_retain() -> None:
 
 
 def test_top_tier_has_single_deeper_retain_rung() -> None:
-    ladder = build_offer_ladder("fibre_1000", monthly_price=199, tenure_months=12, archetype="heavy")
+    ladder = build_offer_ladder(
+        "fibre_1000", monthly_price=199, tenure_months=12, archetype="heavy"
+    )
     assert [r.type for r in ladder.rungs] == ["retain"]
     assert ladder.recommended == "retain"
     # 20% off 199 = ~159
@@ -45,7 +53,9 @@ def test_top_tier_has_single_deeper_retain_rung() -> None:
 
 
 def test_retain_rung_is_discounted_below_current() -> None:
-    ladder = build_offer_ladder("fibre_300", monthly_price=129, tenure_months=6, archetype="flat_low")
+    ladder = build_offer_ladder(
+        "fibre_300", monthly_price=129, tenure_months=6, archetype="flat_low"
+    )
     retain = next(r for r in ladder.rungs if r.type == "retain")
     assert retain.monthly_price < 129
     assert retain.vs_current_delta < 0
