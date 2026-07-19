@@ -18,10 +18,10 @@ Master task list. Mark done with `[x]` and a date; add new tasks in place. Synce
 
 ## Day 2 — Monorepo scaffold + Data & Backend Core
 
-- [ ] Monorepo scaffold: root `package.json` (private) + `pnpm-workspace.yaml` (`apps/web`, `packages/*`)
-- [ ] `apps/web` (Next.js) + `apps/api` (FastAPI/uv) + `packages/shared-types` skeletons
-- [ ] `apps/api/scripts/export_openapi.py` + root `gen:types` script (openapi-typescript → shared-types)
-- [ ] Set `version: 0.1.0` in `apps/web/package.json` + `apps/api/pyproject.toml` (SemVer source of truth — CLAUDE.md §8)
+- [x] Monorepo scaffold: root `package.json` (private) + `pnpm-workspace.yaml` (`apps/web`, `packages/*`) — 2026-07-19
+- [x] `apps/web` (Next.js) + `apps/api` (FastAPI/uv, `/api/health`) + `packages/shared-types` skeletons — 2026-07-19
+- [x] `apps/api/scripts/export_openapi.py` + root `gen:types` script (openapi-typescript → shared-types) — 2026-07-19
+- [x] Version files set to repo version (0.2.2) in `apps/web/package.json` + `apps/api/pyproject.toml` + shared-types (CLAUDE.md §8) — 2026-07-19
 - [ ] Plan catalog config module — MYR fibre 100/300/500/1000 @ 99/129/159/199 (single source for seed/offer/grounding)
 - [ ] Seed 50–100 customers (Faker): plan, tenure, `usage_history` (12mo), `contract_end_date` clustered this month `[GAP #1]`; usage archetypes (flat-low / climbing / heavy)
 - [ ] Derived usage scalars: `avg_monthly_gb` + `last_month_gb` `[GAP #4]`

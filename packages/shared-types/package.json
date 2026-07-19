@@ -1,0 +1,14 @@
+{
+  "name": "@retention/shared-types",
+  "version": "0.2.2",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  }
+}

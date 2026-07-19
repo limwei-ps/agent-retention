@@ -1,0 +1,22 @@
+# Local dev stack. Mirrors the Cloud Run deployment (one image per app).
+services:
+  api:
+    build:
+      context: ./apps/api
+    ports:
+      - "8000:8000"
+    environment:
+      LLM_MODE: mock
+      DATABASE_URL: sqlite:///./retention.db
+      APP_TIMEZONE: Asia/Kuala_Lumpur
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      API_BASE_URL: http://api:8000
+    depends_on:
+      - api

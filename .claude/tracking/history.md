@@ -116,3 +116,18 @@ key decisions.
   - Durable job queue (Cloud Tasks / Pub-Sub / Celery / Arq) is **out of scope by timeline**, justified
     in plan §8.
 - **Files:** `docs/spec.md`, `docs/take-home-plan.md` (§8).
+
+## 2026-07-19 — Day 2: monorepo scaffolding (runnable skeleton)
+
+- **What:** Stood up the pnpm-workspace monorepo. `apps/api` FastAPI skeleton (app factory, config,
+  JSON logging, DB session wiring, `/api/health`, passing pytest); `apps/web` Next.js 16 app
+  (create-next-app adapted to feature-first structure + QueryProvider); `packages/shared-types` with
+  TS types **generated from the live OpenAPI schema** via `pnpm gen:types`; root workspace + scripts;
+  `docker-compose.yml`.
+- **Why:** Day-2 scaffold — a runnable skeleton before data model/endpoints.
+- **Verified:** `uv run pytest` green · `pnpm gen:types` regenerated `schema.ts` (health paths) ·
+  `pnpm --filter web build` compiles with the `@retention/shared-types` import · `docker compose config` valid.
+- **Commits:** `v0.2.0` (workspace + api), `v0.2.1` (web), `v0.2.2` (shared-types + codegen + compose).
+  Package versions unified at 0.2.2 per CLAUDE.md §8.
+- **Deferred to next chunk:** plan-catalog config, models, seeder (customers + offer ladder),
+  list/detail/dashboard endpoints, web test setup.
