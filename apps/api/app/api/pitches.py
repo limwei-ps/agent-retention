@@ -109,8 +109,9 @@ async def generate_pitches_bulk(
     return BulkBatchCreated(batch_id=batch.id, total=len(customer_ids))
 
 
+# async (not sync) so it reads the event-loop-mutated registry on the loop, never a threadpool thread.
 @router.get("/pitches/bulk/{batch_id}", response_model=BulkBatchStatus)
-def get_bulk_status(
+async def get_bulk_status(
     batch_id: int,
     batch_repo: SqlBatchRepository = Depends(get_batch_repository),
     pitch_repo: SqlPitchRepository = Depends(get_pitch_repository),
@@ -163,8 +164,10 @@ def _db_fallback_snapshot(
 ) -> BatchSnapshot | None:
     """Reconstruct a batch's state from the DB when the registry no longer holds it.
 
-    Best-effort: we can tell which customers now have a ready pitch, but not which of the rest failed
-    vs. never ran, so those are reported `pending`. Flagged `live=False` for the caller.
+    Best-effort: we count a customer `succeeded` only if they have a ready pitch generated at/after
+    this batch was created (a pre-existing pitch from an earlier single/bulk run must not be
+    miscounted as this batch's success). We can't distinguish "failed" from "never ran" for the rest,
+    so those are reported `pending`. Flagged `live=False` for the caller.
     """
     batch = batch_repo.get(batch_id)
     if batch is None:
@@ -173,7 +176,9 @@ def _db_fallback_snapshot(
     items: list[ItemState] = []
     all_ready = True
     for customer_id in batch.customer_ids:
-        pitch = pitch_repo.get_latest_ready_for_customer(customer_id)
+        pitch = pitch_repo.get_latest_ready_for_customer(
+            customer_id, created_since=batch.created_at
+        )
         if pitch is not None:
             items.append(ItemState(customer_id=customer_id, status="succeeded", pitch_id=pitch.id))
         else:

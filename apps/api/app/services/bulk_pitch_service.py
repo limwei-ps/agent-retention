@@ -68,8 +68,9 @@ async def _generate_one(
 ) -> None:
     """Generate one pitch in its own session; isolate every failure to this item."""
     await registry.mark_running(batch_id, customer_id)
-    db = session_factory()
+    db = None
     try:
+        db = session_factory()  # inside try: a factory failure must still mark the item failed
         customer = SqlCustomerRepository(db).get(customer_id)
         if customer is None:
             await registry.mark_failed(batch_id, customer_id, "customer not found")
@@ -95,4 +96,5 @@ async def _generate_one(
         )
         await registry.mark_failed(batch_id, customer_id, "generation error")
     finally:
-        db.close()
+        if db is not None:
+            db.close()

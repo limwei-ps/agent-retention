@@ -1,6 +1,11 @@
 """Bulk endpoint tests. `TestClient` runs BackgroundTasks to completion before returning, so a POST
 can be immediately polled for the finished batch."""
 
+from datetime import datetime, timezone
+
+from app.models.pitch import PitchStatus
+from app.repositories.batch_repository import SqlBatchRepository
+from app.repositories.pitch_repository import SqlPitchRepository
 from app.services.batch_registry import BatchRegistry
 
 
@@ -80,6 +85,33 @@ def test_bulk_poll_db_fallback_after_registry_evicted(bulk_client, make_customer
     assert status["live"] is False
     assert status["succeeded"] == 2  # reconstructed from the persisted ready pitches
     assert status["complete"] is True
+
+
+def test_bulk_db_fallback_ignores_pitches_predating_batch(bulk_client, make_customer):
+    """A ready pitch generated before the batch must NOT be miscounted as this batch's success."""
+    client, factory = bulk_client
+    _seed(factory, make_customer, ["CUST-1"])
+    with factory() as db:
+        SqlPitchRepository(db).create(
+            customer_id="CUST-1",
+            status=PitchStatus.ready,
+            text="old pitch from an earlier run",
+            cache_key="k",
+            model="mock",
+            prompt_tokens=1,
+            completion_tokens=1,
+            cost_usd=0.0,
+            grounding_ok=True,
+            created_at=datetime(2000, 1, 1, tzinfo=timezone.utc),
+        )
+        batch_id = SqlBatchRepository(db).create(["CUST-1"], total=1).id
+
+    # Registry never held this batch (created directly via repo) → DB fallback.
+    status = client.get(f"/api/pitches/bulk/{batch_id}").json()
+    assert status["live"] is False
+    assert status["succeeded"] == 0
+    assert status["complete"] is False
+    assert status["items"][0]["status"] == "pending"
 
 
 def test_bulk_unknown_batch_404(bulk_client):
