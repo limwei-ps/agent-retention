@@ -11,7 +11,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app import __version__
-from app.api import customers, dashboard, health
+from app.ai.single_flight import SingleFlight
+from app.api import customers, dashboard, health, pitches
 from app.core.config import settings
 from app.core.logging import configure_logging
 from app import models  # noqa: F401  (import models so Base.metadata sees every table)
@@ -31,9 +32,14 @@ def create_app() -> FastAPI:
     configure_logging()
     app = FastAPI(title=settings.app_name, version=__version__, lifespan=lifespan)
 
+    # Process-wide single-flight registry (built here, not in lifespan, so tests that skip
+    # lifespan still have it on app.state).
+    app.state.single_flight = SingleFlight()
+
     app.include_router(health.router, prefix="/api")
     app.include_router(customers.router, prefix="/api")
     app.include_router(dashboard.router, prefix="/api")
+    app.include_router(pitches.router, prefix="/api")
 
     return app
 

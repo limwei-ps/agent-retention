@@ -17,3 +17,7 @@ class PitchRead(BaseModel):
     model: str | None = None
     grounding_ok: bool = False
     created_at: datetime | None = None
+
+
+class PitchGenerateRequest(BaseModel):
+    force: bool = False  # bypass cache and regenerate
