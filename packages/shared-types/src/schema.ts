@@ -24,16 +24,232 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/customers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Customers */
+        get: operations["list_customers_api_customers_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/customers/{customer_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Customer */
+        get: operations["get_customer_api_customers__customer_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dashboard/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Summary */
+        get: operations["summary_api_dashboard_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * CustomerDetail
+         * @description Full detail: customer info + usage history + offer ladder + latest pitch.
+         */
+        CustomerDetail: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Email */
+            email: string;
+            /** Phone */
+            phone: string;
+            /** Region */
+            region: string;
+            current_plan: components["schemas"]["PlanRef"];
+            /** Monthly Price */
+            monthly_price: number;
+            /** Tenure Months */
+            tenure_months: number;
+            /**
+             * Contract End Date
+             * Format: date
+             */
+            contract_end_date: string;
+            /** Usage Archetype */
+            usage_archetype: string;
+            /** Avg Monthly Gb */
+            avg_monthly_gb: number;
+            /** Last Month Gb */
+            last_month_gb: number;
+            /** Usage History */
+            usage_history: components["schemas"]["UsagePoint"][];
+            offer_ladder: components["schemas"]["OfferLadder"];
+            latest_pitch?: components["schemas"]["PitchRead"] | null;
+        };
+        /**
+         * CustomerSummary
+         * @description Row shape for the customer list.
+         */
+        CustomerSummary: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            current_plan: components["schemas"]["PlanRef"];
+            /** Tenure Months */
+            tenure_months: number;
+            /** Avg Monthly Gb */
+            avg_monthly_gb: number;
+            /**
+             * Contract End Date
+             * Format: date
+             */
+            contract_end_date: string;
+            /** Latest Pitch Status */
+            latest_pitch_status?: string | null;
+        };
+        /** DashboardSummary */
+        DashboardSummary: {
+            /** Expiring This Month */
+            expiring_this_month: number;
+            /** By Tier */
+            by_tier: components["schemas"]["TierCount"][];
+        };
+        /** HTTPValidationError */
+        HTTPValidationError: {
+            /** Detail */
+            detail?: components["schemas"]["ValidationError"][];
+        };
         /** HealthResponse */
         HealthResponse: {
             /** Status */
             status: string;
             /** Llm Mode */
             llm_mode: string;
+        };
+        /** OfferLadder */
+        OfferLadder: {
+            /** Rungs */
+            rungs: components["schemas"]["OfferRung"][];
+            /**
+             * Recommended
+             * @enum {string}
+             */
+            recommended: "retain" | "value_upgrade" | "upsell";
+        };
+        /** OfferRung */
+        OfferRung: {
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "retain" | "value_upgrade" | "upsell";
+            target_plan: components["schemas"]["PlanRef"];
+            /** Monthly Price */
+            monthly_price: number;
+            /** Term Months */
+            term_months: number;
+            /** Vs Current Delta */
+            vs_current_delta: number;
+            /** Headline */
+            headline: string;
+        };
+        /** Page[CustomerSummary] */
+        Page_CustomerSummary_: {
+            /** Data */
+            data: components["schemas"]["CustomerSummary"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+            /** Total */
+            total: number;
+        };
+        /** PitchRead */
+        PitchRead: {
+            status: components["schemas"]["PitchStatus"];
+            /** Text */
+            text?: string | null;
+            /** Model */
+            model?: string | null;
+            /**
+             * Grounding Ok
+             * @default false
+             */
+            grounding_ok: boolean;
+            /** Created At */
+            created_at?: string | null;
+        };
+        /**
+         * PitchStatus
+         * @enum {string}
+         */
+        PitchStatus: "not_generated" | "generating" | "ready" | "failed";
+        /** PlanRef */
+        PlanRef: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Speed Mbps */
+            speed_mbps: number;
+            /** Price Myr */
+            price_myr: number;
+        };
+        /** TierCount */
+        TierCount: {
+            plan: components["schemas"]["PlanRef"];
+            /** Count */
+            count: number;
+        };
+        /** UsagePoint */
+        UsagePoint: {
+            /** Month */
+            month: string;
+            /** Gb */
+            gb: number;
+        };
+        /** ValidationError */
+        ValidationError: {
+            /** Location */
+            loc: (string | number)[];
+            /** Message */
+            msg: string;
+            /** Error Type */
+            type: string;
+            /** Input */
+            input?: unknown;
+            /** Context */
+            ctx?: Record<string, never>;
         };
     };
     responses: never;
@@ -60,6 +276,95 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HealthResponse"];
+                };
+            };
+        };
+    };
+    list_customers_api_customers_get: {
+        parameters: {
+            query?: {
+                /** @description matches name or customer id */
+                search?: string | null;
+                /** @description filter by plan id */
+                plan?: string | null;
+                sort?: "tenure" | "avg_gb" | "contract_end_date";
+                order?: "asc" | "desc";
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_CustomerSummary_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_customer_api_customers__customer_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                customer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    summary_api_dashboard_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardSummary"];
                 };
             };
         };

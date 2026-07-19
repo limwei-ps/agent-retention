@@ -197,7 +197,7 @@ Subject lowercase, no trailing period, ≤72 chars.
 
 **Tags:** tag milestone releases with `git tag vX.Y.Z`; baseline `v0.1.0` marks the initial scaffold.
 
-**Current version: v0.2.3.**
+**Current version: v0.5.2.**
 
 **AI attribution ON** (overrides the global no-attribution default): keep the `Co-Authored-By:
 Claude ...` trailer so the git history is transparent about AI assistance, matching the README

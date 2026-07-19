@@ -117,6 +117,24 @@ key decisions.
     in plan §8.
 - **Files:** `docs/spec.md`, `docs/take-home-plan.md` (§8).
 
+## 2026-07-19 — Day 2 data & backend core (catalog, seed, read endpoints) + review
+
+- **What:** Plan catalog + deterministic offer-ladder service; Customer/Pitch models; DTOs;
+  repository (Protocol + `Depends`); seed-on-boot 60 Faker customers; `GET /api/customers`
+  (search/filter/sort/pagination), `GET /api/customers/{id}` (detail + offer ladder + latest pitch),
+  `GET /api/dashboard/summary`. Regenerated `shared-types` from the expanded OpenAPI.
+- **Review (used the plugins, per the workflow):** ran the **code-review** agent and a
+  **database-reviewer** agent over the data path. Both flagged an **N+1** on the list
+  (`Customer.pitches` lazy-loaded per row) and the DB agent also caught **unstable OFFSET pagination**
+  over non-unique sort columns. Fixed: `selectinload + load_only(status, created_at)`, split the
+  mapper so the summary reads only `.status`, `defer(usage_history)`, and an `id` sort tiebreaker.
+  Added regression tests (bounded query count; stable paging). Cursor pagination + FTS search recorded
+  as scale tradeoffs in plan §8.
+- **Commits:** `v0.3.0` (catalog + offer), `v0.4.0` (models + seed + list/detail), `v0.5.0` (dashboard),
+  `v0.5.1` (N+1 + pagination fix), `v0.5.2` (regenerate shared-types). 19 backend tests pass, ruff clean.
+- **Decision:** `usage_history` kept as a JSON column (value object always loaded with the customer);
+  deferred on the list path to avoid over-fetch.
+
 ## 2026-07-19 — Day 2: monorepo scaffolding (runnable skeleton)
 
 - **What:** Stood up the pnpm-workspace monorepo. `apps/api` FastAPI skeleton (app factory, config,

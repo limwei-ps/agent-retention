@@ -23,15 +23,16 @@ Master task list. Mark done with `[x]` and a date; add new tasks in place. Synce
 - [x] `apps/web` (Next.js) + `apps/api` (FastAPI/uv, `/api/health`) + `packages/shared-types` skeletons — 2026-07-19
 - [x] `apps/api/scripts/export_openapi.py` + root `gen:types` script (openapi-typescript → shared-types) — 2026-07-19
 - [x] Version files set to repo version (0.2.2) in `apps/web/package.json` + `apps/api/pyproject.toml` + shared-types (CLAUDE.md §8) — 2026-07-19
-- [ ] Plan catalog config module — MYR fibre 100/300/500/1000 @ 99/129/159/199 (single source for seed/offer/grounding)
-- [ ] Seed 50–100 customers (Faker): plan, tenure, `usage_history` (12mo), `contract_end_date` clustered this month `[GAP #1]`; usage archetypes (flat-low / climbing / heavy)
-- [ ] Derived usage scalars: `avg_monthly_gb` + `last_month_gb` `[GAP #4]`
-- [ ] Offer ladder derivation (retain / value_upgrade / upsell + `recommended`)
-- [ ] DB layer (SQLite + SQLAlchemy); repositories/DAO behind `Depends()`
-- [ ] `GET /customers`: search name/id `[GAP #5]` / filter plan / sort tenure|usage|expiry / pagination
-- [ ] `GET /customers/{id}`: detail + usage_history + offer ladder + latest pitch
-- [ ] `GET /dashboard/summary`: expiring **this month** by plan tier (month + timezone defined `[GAP #5]`)
-- [ ] `GET /health` (reports `llm_mode`)
+- [x] Plan catalog config module — MYR fibre 100/300/500/1000 @ 99/129/159/199 — 2026-07-19
+- [x] Seed 60 customers (Faker): plan, tenure, `usage_history` (12mo), `contract_end_date` clustered this month `[GAP #1]`; usage archetypes (flat_low / climbing / heavy) — 2026-07-19
+- [x] Derived usage scalars: `avg_monthly_gb` + `last_month_gb` `[GAP #4]` — 2026-07-19
+- [x] Offer ladder derivation (retain / value_upgrade / upsell + `recommended`) — 2026-07-19
+- [x] DB layer (SQLite + SQLAlchemy); repository behind a Protocol via `Depends()` — 2026-07-19
+- [x] `GET /customers`: search name/id `[GAP #5]` / filter plan / sort tenure|avg_gb|expiry / pagination — 2026-07-19
+- [x] `GET /customers/{id}`: detail + usage_history + offer ladder + latest pitch — 2026-07-19
+- [x] `GET /dashboard/summary`: expiring **this month** by plan tier (KL timezone `[GAP #5]`) — 2026-07-19
+- [x] `GET /health` (reports `llm_mode`) — 2026-07-19
+- [x] Review pass (code-review + database-reviewer agents): fixed N+1 + pagination stability — 2026-07-19
 - [ ] Commit incrementally — one per endpoint / logical unit
 
 ## Day 3 — AI Layer (highest weight)
