@@ -329,6 +329,13 @@ State these explicitly in the README. Naming them shows production judgment; the
   tiebreaker (correct + fast for the seeded ~60 rows). At large scale, production would switch to
   keyset/cursor pagination (avoids deep-offset cost and live-insert page drift) and full-text /
   trigram search (the current `ILIKE '%q%'` can't use a b-tree index). Deferred as a scale tradeoff.
+- **Pitch-cache growth & DB concurrency model.** The `pitches` table doubles as an append-only cache
+  (a new row per generation) with no pruning — fine at demo scale, but production would prune/archive
+  superseded rows or split live-cache from audit-log. Latest-pitch on the list page loads the full
+  (now-composite-indexed) pitch relationship rather than a denormalized `latest_pitch_id`. And the
+  generation path calls **synchronous SQLAlchemy inside async handlers**, holding a session for the SSE
+  stream's duration — acceptable on SQLite + single-instance (WAL + busy_timeout mitigate reader
+  blocking), but production would use an async driver / threadpool + short-lived sessions.
 - **Scale & resilience.** Retry policies with jitter, circuit breakers on the LLM provider,
   multi-region, and load testing the bulk path.
 - **CI/CD.** Automated tests + deploy pipeline on push; here it's manual.

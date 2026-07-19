@@ -6,7 +6,7 @@ from __future__ import annotations
 import enum
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, DateTime, Enum, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, Enum, Float, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.session import Base
@@ -25,6 +25,12 @@ def _utcnow() -> datetime:
 
 class Pitch(Base):
     __tablename__ = "pitches"
+    # Composite indexes matching the two cache-lookup access paths (equality columns first, then the
+    # ORDER BY column) so lookups stay O(log n) as the append-only table grows.
+    __table_args__ = (
+        Index("ix_pitch_cache_lookup", "customer_id", "cache_key", "created_at"),
+        Index("ix_pitch_customer_created", "customer_id", "created_at"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     customer_id: Mapped[str] = mapped_column(ForeignKey("customers.id"), index=True)

@@ -31,7 +31,7 @@ class SqlPitchRepository:
                 Pitch.cache_key == cache_key,
                 Pitch.status == PitchStatus.ready,
             )
-            .order_by(Pitch.created_at.desc())
+            .order_by(Pitch.created_at.desc(), Pitch.id.desc())  # id tiebreaks equal timestamps
             .limit(1)
         )
         return self._db.scalars(stmt).first()
@@ -40,7 +40,7 @@ class SqlPitchRepository:
         stmt = (
             select(Pitch)
             .where(Pitch.customer_id == customer_id, Pitch.status == PitchStatus.ready)
-            .order_by(Pitch.created_at.desc())
+            .order_by(Pitch.created_at.desc(), Pitch.id.desc())
             .limit(1)
         )
         return self._db.scalars(stmt).first()

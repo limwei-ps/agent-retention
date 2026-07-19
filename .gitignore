@@ -24,8 +24,10 @@ coverage/
 playwright-report/
 test-results/
 
-# Databases (seed-on-boot)
+# Databases (seed-on-boot) + SQLite WAL sidecar files
 *.db
+*.db-wal
+*.db-shm
 *.sqlite
 *.sqlite3
 

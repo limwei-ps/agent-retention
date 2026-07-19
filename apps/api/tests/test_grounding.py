@@ -40,11 +40,12 @@ def test_cache_key_changes_when_tenure_bucket_changes(make_customer) -> None:
     assert low != high
 
 
-def test_cache_key_stable_within_same_bucket(make_customer) -> None:
-    # 6 and 10 months are both in the 0-12 bucket → same key (small drift shouldn't invalidate).
-    a = cache_key(_ctx(make_customer, tenure_months=6), "mock", PROMPT_TEMPLATE_VERSION)
-    b = cache_key(_ctx(make_customer, tenure_months=10), "mock", PROMPT_TEMPLATE_VERSION)
-    assert a == b
+def test_cache_key_uses_exact_usage_not_buckets(make_customer) -> None:
+    # Exact usage is part of the key (the prompt quotes it verbatim), so a change that stays within
+    # the same usage band must still invalidate — otherwise a cache hit would replay stale numbers.
+    a = cache_key(_ctx(make_customer, avg_gb=400), "mock", PROMPT_TEMPLATE_VERSION)
+    b = cache_key(_ctx(make_customer, avg_gb=420), "mock", PROMPT_TEMPLATE_VERSION)
+    assert a != b
 
 
 def test_prompt_contains_markers_and_grounding(make_customer) -> None:

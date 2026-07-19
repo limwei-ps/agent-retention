@@ -2,7 +2,7 @@ import asyncio
 
 from sqlalchemy import func, select
 
-from app.ai.llm_client import MockLLM
+from app.ai.llm_client import MockLLM, ProviderError
 from app.ai.llm_provider import LLMChain, LLMHop
 from app.ai.single_flight import SingleFlight
 from app.models.pitch import Pitch
@@ -138,3 +138,23 @@ async def test_single_flight_coalesces_concurrent_requests(db_session, make_cust
     assert any(e.event == "done" for e in r1)
     assert any(e.event == "done" for e in r2)
     assert _pitch_count(db_session) == 1
+
+
+async def test_single_flight_coalesced_failure_yields_clean_error(db_session, make_customer):
+    # Two concurrent requests, every hop fails, no prior cache → both get a clean error (no crash).
+    customer, ladder = _customer(db_session, make_customer)
+
+    class _FailSlow:
+        model_id = "mock"
+
+        async def generate(self, prompt):
+            await asyncio.sleep(0.01)
+            raise ProviderError("down")
+            yield  # unreachable; makes this an async generator
+
+    svc = _service(db_session, _chain(("primary", _FailSlow())))
+    r1, r2 = await asyncio.gather(_run(svc, customer, ladder), _run(svc, customer, ladder))
+
+    assert r1[-1].event == "error"
+    assert r2[-1].event == "error"
+    assert _pitch_count(db_session) == 0

@@ -68,13 +68,20 @@ def build_grounding(customer: Customer, ladder: OfferLadder) -> GroundingContext
 
 
 def _cache_projection(ctx: GroundingContext) -> dict:
-    """The exact, bucketed facts the pitch depends on — hashed into the cache key."""
+    """The exact facts the pitch depends on — hashed into the cache key.
+
+    Uses the *exact* tenure/usage numbers (not buckets) because the prompt quotes them verbatim: a
+    bucketed key would serve a stale pitch stating old numbers as current when a value drifts within
+    its band. Grounding correctness over cache-hit-rate (spec §4.1/§4.3).
+    """
     return {
         "customer_id": ctx.customer_id,
+        "name": ctx.name,
         "plan_id": ctx.plan_id,
         "monthly_price": ctx.monthly_price,
-        "tenure_bucket": tenure_bucket(ctx.tenure_months),
-        "usage_bucket": usage_bucket(ctx.avg_monthly_gb, ctx.plan_id),
+        "tenure_months": ctx.tenure_months,
+        "avg_monthly_gb": ctx.avg_monthly_gb,
+        "last_month_gb": ctx.last_month_gb,
         "contract_end_month": ctx.contract_end.strftime("%Y-%m"),
         "recommended": ctx.ladder.recommended,
         "ladder": [

@@ -150,6 +150,23 @@ key decisions.
 - **Deferred to next chunk:** plan-catalog config, models, seeder (customers + offer ladder),
   list/detail/dashboard endpoints, web test setup.
 
+## 2026-07-19 — Day 3 Phase A: single-pitch AI layer + review fixes
+
+- **What:** Built the single-pitch vertical slice (mock-first): LLM client Protocol + MockLLM +
+  get_llm_chain DI (v0.6.0); grounding + prompt + output verification (v0.7.0); pitch service with
+  cache / single-flight / fallback / verify-regenerate + pitch repository (v0.8.0); SSE endpoint
+  `POST /api/customers/{id}/pitch` (v0.9.0). Teeth step confirmed grounded streamed output.
+- **Review (plugins):** ran **code-review** + **database-reviewer** agents. Fixed (v0.9.1):
+  - **CRITICAL** single-flight follower crash when the leader produced no pitch (resolve the future
+    as an error, not `None`); added a coalesced-failure regression test.
+  - **HIGH** stale-cache grounding bug — cache key now includes **exact** tenure/usage/name (matching
+    what the prompt quotes) instead of coarse buckets.
+  - Composite indexes on `pitches` + `id` ORDER BY tiebreaker; SQLite **WAL + busy_timeout** pragmas.
+  - Log every terminal outcome (generated / last_cached / failed) + flag last-cached as `stale`.
+- **Documented tradeoffs (plan §8):** append-only cache growth (no pruning), list latest-pitch
+  over-fetch, and sync-DB-in-async / session-held-across-stream (SQLite + single-instance).
+- **Status:** 47 backend tests pass, ruff clean. **Checkpoint — paused before Phase B (bulk) + C (real Gemini).**
+
 ## 2026-07-19 — Adopted official plugin toolchain
 
 - **What:** Documented all enabled official-marketplace plugins in `CLAUDE.md` §10 (mapped to roles),

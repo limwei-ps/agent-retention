@@ -37,17 +37,21 @@ Master task list. Mark done with `[x]` and a date; add new tasks in place. Synce
 
 ## Day 3 — AI Layer (highest weight)
 
-- [ ] LLM abstraction with `LLM_MODE=mock|gemini`; deterministic **mock first**
-- [ ] Grounding prompt (customer + offer ladder + `recommended`); **sanitize** customer text (2nd-order injection)
-- [ ] Pitch-as-a-product prompt + `PROMPT_TEMPLATE_VERSION`
-- [ ] Output grounding verification (quoted plan/price ∈ ladder; auto-regenerate once, else clean error)
-- [ ] Cache: key = `hash(grounding snapshot + template version + model id)`; prove invalidation
-- [ ] Regenerate = force cache bypass `[GAP #3]`
-- [ ] Single-flight / request coalescing per `cache_key`
-- [ ] Fallback (gemini → flash → cached → clean error) — prove it fires
-- [ ] SSE streaming endpoint; cache-hit = replay stored text as stream
-- [ ] Bulk generation: semaphore cap + per-item success/failure tracking
-- [ ] Token/cost logging (structured JSON per call)
+### Phase A — single-pitch vertical slice (done, reviewed)
+- [x] LLM abstraction with `LLM_MODE=mock|gemini`; deterministic **mock first** — 2026-07-19
+- [x] Grounding prompt (customer + offer ladder + `recommended`); **sanitize** customer text (2nd-order injection) — 2026-07-19
+- [x] Pitch-as-a-product prompt + `PROMPT_TEMPLATE_VERSION` — 2026-07-19
+- [x] Output grounding verification (quoted plan/price ∈ ladder; auto-regenerate once, else clean error) — 2026-07-19
+- [x] Cache: key = `hash(grounding snapshot + template version + model id)` incl. exact tenure/usage; invalidation proven — 2026-07-19
+- [x] Regenerate = force cache bypass `[GAP #3]` — 2026-07-19
+- [x] Single-flight / request coalescing per `cache_key` — 2026-07-19
+- [x] Fallback (hop → next hop → last-cached → clean error) — proven — 2026-07-19
+- [x] SSE streaming endpoint; cache-hit = replay stored text as stream — 2026-07-19
+- [x] Token/cost logging (structured JSON per call) — 2026-07-19
+- [x] Review pass (code-review + database-reviewer): fixed single-flight-failure crash, stale-cache key, indexes/WAL/tiebreaker — 2026-07-19
+
+### Phase B/C — pending (after checkpoint)
+- [ ] Bulk generation: semaphore cap + per-item success/failure tracking + SSE progress
 - [ ] Swap in real Gemini behind the flag; read outputs to confirm no hallucination
 - [ ] Commit each capability separately
 
