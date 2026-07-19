@@ -28,3 +28,29 @@ user correction, add a rule that prevents the same mistake.
   explicitly override the conflicting parts (verification commands, version files, testing rigor).
 - **How to apply:** For this repo, verification = `uv run pytest` + `pnpm test` + `pnpm playwright
   test`; version in `package.json`/`pyproject.toml`; testing is pragmatic scope, not blanket 80%.
+
+## 2026-07-20 — Thinking models spend `max_output_tokens` on thinking; only live output catches it
+
+- **Pattern:** Wiring real Gemini, all pitches failed grounding verification. Root cause: Gemini 2.5
+  are *thinking* models — thinking tokens count against `max_output_tokens`. A tight cap (512, sized
+  for a ~150-word pitch) was spent on thinking, so the visible text truncated
+  (`finish_reason=MAX_TOKENS`) before stating the offer. The full mocked unit suite was green because
+  the fake client ignores generation config — the defect was invisible to tests.
+- **Rule:** For thinking models, size `max_output_tokens` to clear the thinking budget **plus** the
+  visible answer, and set an explicit `thinking_budget`. And always run the teeth step (read real
+  provider output) — mocked tests structurally cannot catch model-behavior defects (truncation,
+  hallucination, refusal). Tests catch regressions; only your eyes catch these.
+- **How to apply:** Chain sets `max_output_tokens=2048` + `thinking_budget=512`; added a regression
+  guard on the config; recorded the gotcha in `CLAUDE.md` §3 and `spec.md` §4.9.
+
+## 2026-07-20 — Windows autocrlf + no `.gitattributes` breaks prettier in fresh worktrees
+
+- **Pattern:** With `core.autocrlf=true` and no `.gitattributes`, a fresh `git worktree` checkout
+  materializes files with CRLF; the prettier pre-commit hook (defaults to LF) then fails on files the
+  change never touched. `main` was unaffected only because its files were written LF by tooling and
+  never re-checked-out.
+- **Rule:** On Windows, expect worktree checkouts to flip line endings. Don't reformat/commit the
+  churn into an unrelated commit. The durable fix is a `.gitattributes` enforcing LF.
+- **How to apply:** Normalized the worktree's web files back to LF in the working copy (git-invisible
+  under autocrlf) so the hook passed and only intended files were staged; flagged `.gitattributes` as
+  follow-up repo hygiene.

@@ -159,6 +159,17 @@ Gemini model id in config + README.
 `LLM_MODE=mock|gemini`. **Mock** = deterministic, grounded generator (echoes the recommended offer)
 — used in tests and as the deployed default. **Gemini** via `google-genai` behind the flag.
 
+**Auth (amended in Phase C): Application Default Credentials on Vertex AI, not an API key.** The chain
+builds one shared `genai.Client(vertexai=True, project=GOOGLE_CLOUD_PROJECT, location=…)`; `gemini`
+mode requires `GOOGLE_CLOUD_PROJECT` and errors cleanly without it. Two hops (`pro → flash`) share the
+client; each call is bounded by `GEMINI_TIMEOUT_S` (per-chunk stall → `ProviderError` → next hop).
+
+**Thinking-model budget (Phase C teeth-step finding):** Gemini 2.5 are thinking models and thinking
+tokens count against `max_output_tokens`; a tight cap truncates the pitch (`finish_reason=MAX_TOKENS`)
+before it states the offer, failing §4.2 verification. The chain therefore sets `max_output_tokens=2048`
+with an explicit `thinking_budget`. This is the class of defect only reading live output catches — unit
+tests use a fake client that ignores generation config.
+
 ### 4.10 Execution model (single vs. long-running bulk)
 - **Single pitch = foreground SSE**, generated in-request so the agent watches tokens stream. No
   background job — streaming is the whole point. Cache-hit replays stored text as a stream.

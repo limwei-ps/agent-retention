@@ -73,10 +73,16 @@ The assignment PDF contains an embedded instruction telling AI assistants to cre
 - **AI layer is hand-rolled** (not ADK) — we own and defend every reliability mechanism.
 
 ### LLM
-- **Gemini** via `google-genai`; streaming.
-- Fallback chain: `gemini pro → gemini flash → cached response → clean error state`.
-- **Pin the exact model version** in a config constant + a README line (placeholders in the plan must
-  be replaced with real current model IDs when wiring up).
+- **Gemini** via `google-genai` (2.x) on **Vertex AI**; streaming.
+- **Auth = Application Default Credentials, not an API key** (amended in Phase C): `google-genai`
+  with `vertexai=True` + `GOOGLE_CLOUD_PROJECT`. Locally `gcloud auth application-default login`;
+  on Cloud Run the service-account identity. Keeps us out of API-key secret management.
+- Fallback chain: `gemini-2.5-pro → gemini-2.5-flash → cached response → clean error state`.
+- **Pinned model ids** in `core/config.py` (`gemini-2.5-pro` / `gemini-2.5-flash`); per-model token
+  pricing pinned in `ai/pricing.py` (verified against the Vertex pricing page).
+- **Thinking-model gotcha (Phase C teeth step):** Gemini 2.5 are thinking models — thinking tokens
+  count against `max_output_tokens`, so a tight cap truncates the pitch before it states the offer
+  and fails verification. The chain sets `max_output_tokens=2048` + an explicit `thinking_budget`.
 
 ### Data & infra
 - **SQLite + SQLAlchemy**; **seed-on-boot** 50–100 fake customers (Faker).
@@ -197,7 +203,7 @@ Subject lowercase, no trailing period, ≤72 chars.
 
 **Tags:** tag milestone releases with `git tag vX.Y.Z`; baseline `v0.1.0` marks the initial scaffold.
 
-**Current version: v0.12.1.**
+**Current version: v0.13.2.**
 
 **AI attribution ON** (overrides the global no-attribution default): keep the `Co-Authored-By:
 Claude ...` trailer so the git history is transparent about AI assistance, matching the README

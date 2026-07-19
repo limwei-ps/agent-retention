@@ -59,9 +59,12 @@ Master task list. Mark done with `[x]` and a date; add new tasks in place. Synce
 - [x] Tests: all-succeed, partial-failure isolation, semaphore cap, DB fallback, dedup, validation (21 new) — 2026-07-19
 - [x] Teeth step: live POST/stream/poll; 3 succeed + 1 bogus fails in isolation; pitch grounded — 2026-07-19
 
-### Phase C — pending (after checkpoint)
-- [ ] Swap in real Gemini behind the flag; read outputs to confirm no hallucination
-- [ ] Commit each capability separately
+### Phase C — done (2026-07-20)
+- [x] Swap in real Gemini behind the flag; read outputs to confirm no hallucination — 2026-07-20:
+      `GeminiLLM` over Vertex AI + ADC (no API key); live teeth step confirmed grounded pitches
+      (exact plan/price/term/tenure), cache-hit replay, cost logging. Also fixed Gemini token pricing.
+- [x] Commit each capability separately — 2026-07-20: v0.12.5 dep, v0.12.6 pricing, v0.13.0
+      adapter+chain, v0.13.1 thinking-model token fix, v0.13.2 docs/spec amendment.
 
 ## Day 4 — Frontend
 

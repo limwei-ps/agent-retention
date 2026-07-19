@@ -273,8 +273,10 @@ the non-Vercel/Netlify requirement. Update Day 5 to target Cloud Run.
   an active request (billed while streaming, free while idle).
 - **Cold starts.** With scale-to-zero, the first hit after idle is slow. Leave min instances at zero
   (warm instances accrue charges even idle) and add a README line: "first request may cold-start."
-- **Secrets, not baked images.** LLM API key goes in Secret Manager / Cloud Run secret env var —
-  never in the image or a commit. Same discipline as `.env` in `.gitignore`.
+- **Secrets, not baked images.** _Amended in Phase C:_ Gemini now authenticates via **Application
+  Default Credentials on Vertex AI** — the Cloud Run service-account identity, **no API key to store**.
+  Locally, `gcloud auth application-default login`. Same `.env`-in-`.gitignore` discipline for the
+  non-secret config (`GOOGLE_CLOUD_PROJECT`, `LLM_MODE`).
 - **Ephemeral filesystem.** Cloud Run's disk is per-instance and resets on redeploy. A seeded SQLite
   file won't persist or share across instances. Pragmatic call: **seed-on-boot** and say so in the
   README; or use a managed DB if you want persistence. Decide deliberately.
@@ -371,8 +373,10 @@ source of truth.
   - *Services* — business + AI logic (grounding, cache, fallback, batching, cost logging).
   - *Repository/DAO* — DB access behind an interface, injected via FastAPI `Depends()`.
   - **Dependency injection** everywhere (DB sessions, services, LLM client) so tests inject a mock LLM.
-- **LLM: Gemini** via `google-genai`; streaming; fallback `gemini-2.5-pro → gemini-2.5-flash →
-  cached/clean-error`. Model version pinned in a config constant + a README line.
+- **LLM: Gemini** via `google-genai` (2.x) on **Vertex AI** (ADC auth, _Phase C amendment_); streaming;
+  fallback `gemini-2.5-pro → gemini-2.5-flash → cached/clean-error`. Model ids + token pricing pinned in
+  config/`ai/pricing.py`. NB: 2.5 are thinking models — `max_output_tokens` must clear the thinking
+  budget or the pitch truncates before stating the offer (found via the teeth step).
 - Tests: **pytest + pytest-asyncio**; LLM mocked (cache hit, fallback, partial batch failure,
   single-flight coalescing).
 

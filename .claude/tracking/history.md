@@ -255,3 +255,40 @@ key decisions.
   N-query DB fallback loop (fine at N≤200); explicit SQLite pool sizing (fine at `bulk_concurrency=4`).
 - **Verification:** 71 tests pass (+3: fallback-ignores-old-pitch, registry eviction ×2);
   lint/format/typecheck green. Reviewers' verdict was WARNING (1 HIGH) → HIGH now fixed.
+
+## 2026-07-20 — Day 3 Phase C: swap in real Gemini (Vertex AI + ADC)
+
+- **What:** Wired the real LLM provider behind `LLM_MODE=gemini`, keeping `mock` the default. Done in
+  a `day3-phase-c` worktree; incremental semantic-versioned commits.
+- **Auth decision (user):** Application Default Credentials on **Vertex AI**, not an API key —
+  `genai.Client(vertexai=True, project, location)`. Fits the Cloud Run deploy (service-account
+  identity) and removes API-key secret management. `gemini` mode requires `GOOGLE_CLOUD_PROJECT`.
+- **Changes:**
+  - `v0.12.5` chore: add `google-genai` (resolved 2.12.1).
+  - `v0.12.6` fix: correct pinned Gemini token pricing to Vertex standard rates (pro output was
+    under-counted; flash both wrong). Verified against the live pricing page. (`ai/pricing.py`)
+  - `v0.13.0` feat: `GeminiLLM` adapter over the existing `LLMClient` seam (streams deltas → one
+    `UsageInfo`; normalizes connect/mid-stream/stall errors to `ProviderError`; usage-estimate
+    fallback). `get_llm_chain` builds a 2-hop pro→flash chain over one shared client; SDK imported
+    only on the real path; client injected → 10 unit tests, no network. Config gains
+    `GOOGLE_CLOUD_PROJECT/LOCATION` + `GEMINI_TIMEOUT_S`; dropped unused `GEMINI_API_KEY`.
+    (`ai/llm_client.py`, `ai/llm_provider.py`, `core/config.py`, `.env.example`)
+  - `v0.13.1` fix: **thinking-model token budget** (teeth-step finding). Gemini 2.5 are thinking
+    models; thinking tokens count against `max_output_tokens`, so 512 truncated the pitch
+    (`finish_reason=MAX_TOKENS`) before the offer → all hops failed verification → error. Raised to
+    2048 + explicit `thinking_budget=512`. Added a regression guard. (`ai/llm_provider.py`)
+  - `v0.13.2` docs: recorded the ADC amendment + thinking-model gotcha in `CLAUDE.md` §3, `spec.md`
+    §4.9, `take-home-plan.md`; tracking updates.
+- **Teeth step (live, real Vertex calls, project `easy-struct`):** read real pitches for two
+  customers. Both grounded first-pass on `gemini-2.5-pro`, no fallback: exact plan name, RM price,
+  term, tenure, usage; `grounding_ok=true`; cost logged (~$0.002/pitch). Cache-hit replay confirmed
+  (`cache_hit=true`, identical text). The earlier truncation run also confirmed the fallback chain
+  fires (pro→flash→error) mechanically.
+- **Key decisions:** reuse the untouched reliability pipeline (verification, cache, single-flight,
+  fallback, streaming, bulk, cost logging all consume the seam unchanged); low temperature (0.4) +
+  bounded output keep pitches grounded and tight; per-chunk stall timeout so a hung hop fails over.
+- **Verification:** 82 tests pass (+11 gemini); ruff + mypy clean; hooks green on every commit.
+- **Env snag (noted, not committed):** on Windows `core.autocrlf=true` with no `.gitattributes`
+  makes fresh worktree checkouts CRLF, which breaks the prettier pre-commit hook. Normalized the
+  worktree's web files back to LF (git-invisible) to get commits through. A `.gitattributes`
+  enforcing LF is the real fix — deferred as separate repo-hygiene work.
