@@ -5,11 +5,15 @@ from __future__ import annotations
 
 import enum
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, DateTime, Enum, Float, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.session import Base
+
+if TYPE_CHECKING:
+    from app.models.customer import Customer
 
 
 class PitchStatus(str, enum.Enum):
@@ -49,4 +53,4 @@ class Pitch(Base):
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
 
-    customer: Mapped["Customer"] = relationship(back_populates="pitches")  # noqa: F821
+    customer: Mapped["Customer"] = relationship(back_populates="pitches")

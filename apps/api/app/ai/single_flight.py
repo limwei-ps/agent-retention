@@ -43,8 +43,10 @@ class SingleFlight:
             return
         if error is not None:
             future.set_exception(error)
-        else:
+        elif result is not None:
             future.set_result(result)
+        else:  # neither result nor error → surface as a failure rather than resolve with None
+            future.set_exception(RuntimeError("single-flight finished with no result"))
 
 
 def get_single_flight(request: Request) -> SingleFlight:

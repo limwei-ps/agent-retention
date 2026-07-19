@@ -3,11 +3,15 @@
 from __future__ import annotations
 
 from datetime import date
+from typing import TYPE_CHECKING
 
 from sqlalchemy import JSON, Date, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.session import Base
+
+if TYPE_CHECKING:
+    from app.models.pitch import Pitch
 
 
 class Customer(Base):
@@ -31,7 +35,7 @@ class Customer(Base):
     avg_monthly_gb: Mapped[int] = mapped_column(Integer, index=True)
     last_month_gb: Mapped[int] = mapped_column(Integer)
 
-    pitches: Mapped[list["Pitch"]] = relationship(  # noqa: F821
+    pitches: Mapped[list["Pitch"]] = relationship(
         back_populates="customer",
         cascade="all, delete-orphan",
         order_by="Pitch.created_at.desc()",
