@@ -21,10 +21,10 @@ class SqlBatchRepository:
         self._db = db
 
     def create(self, customer_ids: list[str], total: int) -> PitchBatch:
+        # id/created_at are populated at flush and kept after commit (expire_on_commit=False).
         batch = PitchBatch(customer_ids=customer_ids, total=total)
         self._db.add(batch)
         self._db.commit()  # short transaction — mitigates SQLite write-lock contention (spec §4.5)
-        self._db.refresh(batch)
         return batch
 
     def get(self, batch_id: int) -> PitchBatch | None:

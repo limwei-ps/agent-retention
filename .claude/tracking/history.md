@@ -226,3 +226,32 @@ key decisions.
   `pnpm gen:types` regenerated (`pitches/bulk` paths present in `shared-types`).
 - **Commits:** `v0.10.0` (generate + batch model/repo/registry foundation), `v0.11.0` (bulk fan-out
   service), `v0.12.0` (bulk routes + schemas + wiring + regenerated types). §8 lockstep version bumps.
+
+## 2026-07-19 — Day 3 Phase B: checkpoint review fixes
+
+- **What:** Triaged `code-reviewer` + `database-reviewer` findings over the bulk slice; fixed the
+  worthwhile ones, documented the rest as known-minor.
+- **Correctness (v0.12.2):**
+  - **[HIGH]** DB-fallback false-positive: `_db_fallback_snapshot` counted *any* historical ready
+    pitch as this batch's success. Added a `created_since` filter to
+    `get_latest_ready_for_customer`; the fallback now only credits pitches generated at/after the
+    batch's `created_at`, else `pending`. (`api/pitches.py`, `repositories/pitch_repository.py`)
+  - **[MED]** Item could stick at `running` forever if `session_factory()` raised (outside the
+    try). Moved session creation inside the `try`; `finally` guards `db is not None`.
+    (`services/bulk_pitch_service.py`)
+  - **[MED]** `get_bulk_status` was sync (threadpool) reading the event-loop-mutated registry — a
+    cross-thread data race. Made it `async def`. (`api/pitches.py`)
+- **Perf/hardening (v0.12.3):**
+  - **[MED]** `BatchRegistry` never evicted → unbounded memory. Added a bounded cap (default 256)
+    that drops the oldest *completed* batches on `create` (in-flight never evicted; dropped batches
+    fall back to the DB reconstruction). (`services/batch_registry.py`)
+  - **[MED-db]** Dropped the redundant standalone `pitches.customer_id` index (already the leading
+    column of two composite indexes) — one fewer btree write per insert on the append-only table.
+    (`models/pitch.py`)
+  - **[MED-db]** Set `expire_on_commit=False` and removed post-commit `refresh()` in both repos —
+    saves a SELECT per row created on the hot write path. (`db/session.py`, both repositories)
+- **Deferred (documented, docs §8):** read snapshot held across the LLM `await` (mitigated — bulk
+  closes its per-item session after each generation, so the window is one generation, not the batch);
+  N-query DB fallback loop (fine at N≤200); explicit SQLite pool sizing (fine at `bulk_concurrency=4`).
+- **Verification:** 71 tests pass (+3: fallback-ignores-old-pitch, registry eviction ×2);
+  lint/format/typecheck green. Reviewers' verdict was WARNING (1 HIGH) → HIGH now fixed.

@@ -19,7 +19,10 @@ _is_sqlite = settings.database_url.startswith("sqlite")
 _connect_args = {"check_same_thread": False} if _is_sqlite else {}
 
 engine = create_engine(settings.database_url, connect_args=_connect_args)
-SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
+# expire_on_commit=False: our models use only client-side defaults (autoincrement id + Python-side
+# `created_at`), so instances stay valid after commit — this lets repositories skip an extra SELECT
+# (no post-commit `refresh()`), which matters on the append-only pitches write path during bulk fan-out.
+SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False, expire_on_commit=False)
 
 
 if _is_sqlite:

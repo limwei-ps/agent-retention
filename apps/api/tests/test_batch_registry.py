@@ -62,6 +62,28 @@ async def test_wait_for_change_returns_immediately_if_already_advanced():
     assert new_version > 0
 
 
+async def test_evicts_oldest_completed_when_over_cap():
+    reg = BatchRegistry(max_batches=3)
+    for i in (1, 2, 3):
+        reg.create(i, ["A"])
+        await reg.mark_complete(i)
+
+    reg.create(4, ["A"])  # over cap → drop the oldest completed (batch 1)
+
+    assert reg.snapshot(1) is None
+    assert reg.snapshot(4) is not None
+    assert reg.snapshot(2) is not None
+
+
+def test_never_evicts_incomplete_batches():
+    reg = BatchRegistry(max_batches=2)
+    reg.create(1, ["A"])
+    reg.create(2, ["A"])
+    reg.create(3, ["A"])  # over cap but nothing completed → all retained
+
+    assert all(reg.snapshot(i) is not None for i in (1, 2, 3))
+
+
 async def test_updates_to_unknown_batch_or_item_are_noops():
     reg = BatchRegistry()
     reg.create(1, ["A"])

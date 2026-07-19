@@ -37,7 +37,10 @@ class Pitch(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    customer_id: Mapped[str] = mapped_column(ForeignKey("customers.id"), index=True)
+    # No standalone index: `customer_id` is the leading column of both composite indexes below, which
+    # already serve customer_id-only lookups — a third btree would only add write cost on this
+    # append-only table.
+    customer_id: Mapped[str] = mapped_column(ForeignKey("customers.id"))
 
     status: Mapped[PitchStatus] = mapped_column(
         Enum(PitchStatus, native_enum=False), default=PitchStatus.not_generated

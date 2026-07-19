@@ -72,14 +72,28 @@ class _Batch:
 
 
 class BatchRegistry:
-    def __init__(self) -> None:
+    def __init__(self, max_batches: int = 256) -> None:
         self._batches: dict[int, _Batch] = {}
+        self._max_batches = max_batches
 
     def create(self, batch_id: int, customer_ids: list[str]) -> None:
+        self._evict_if_needed()
         self._batches[batch_id] = _Batch(
             batch_id=batch_id,
             items={cid: ItemState(customer_id=cid) for cid in customer_ids},
         )
+
+    def _evict_if_needed(self) -> None:
+        """Bound memory: drop the oldest *completed* batches once over the cap. Post-eviction, a poll
+        for a dropped batch transparently falls back to the DB reconstruction (`live=False`). In-flight
+        (incomplete) batches are never evicted. Insertion order = age (dict preserves it)."""
+        if len(self._batches) < self._max_batches:
+            return
+        for batch_id in list(self._batches):
+            if len(self._batches) < self._max_batches:
+                break
+            if self._batches[batch_id].complete:
+                del self._batches[batch_id]
 
     def has(self, batch_id: int) -> bool:
         return batch_id in self._batches
