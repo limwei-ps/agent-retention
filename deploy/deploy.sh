@@ -47,20 +47,25 @@ docker build -t "${IMAGE_BASE}/web:${TAG}" -f ./apps/web/Dockerfile .
 docker push "${IMAGE_BASE}/api:${TAG}"
 docker push "${IMAGE_BASE}/web:${TAG}"
 
-echo "==> Deploying api (real Gemini, min=0/max=1)"
+echo "==> Deploying api (real Gemini, min=0/max=1, PRIVATE — no public invoker)"
 gcloud run deploy retention-api \
   --project "${PROJECT}" --region "${REGION}" --image "${IMAGE_BASE}/api:${TAG}" \
-  --allow-unauthenticated --min-instances=0 --max-instances=1 --timeout=300 \
+  --no-allow-unauthenticated --min-instances=0 --max-instances=1 --timeout=300 \
   --set-env-vars "LLM_MODE=gemini,GOOGLE_CLOUD_PROJECT=${PROJECT},GOOGLE_CLOUD_LOCATION=global"
 
 API_URL="$(gcloud run services describe retention-api --project "${PROJECT}" --region "${REGION}" --format='value(status.url)')"
 echo "==> api URL: ${API_URL}"
 
-echo "==> Deploying web (BFF → api)"
+echo "==> Allowing the web runtime SA to invoke the private api (service-to-service)"
+gcloud run services add-iam-policy-binding retention-api \
+  --project "${PROJECT}" --region "${REGION}" \
+  --member "serviceAccount:${RUNTIME_SA}" --role roles/run.invoker >/dev/null
+
+echo "==> Deploying web (public BFF → private api via ID token)"
 gcloud run deploy retention-web \
   --project "${PROJECT}" --region "${REGION}" --image "${IMAGE_BASE}/web:${TAG}" \
   --allow-unauthenticated --min-instances=0 --max-instances=1 --timeout=300 \
-  --set-env-vars "API_BASE_URL=${API_URL}"
+  --set-env-vars "API_BASE_URL=${API_URL},UPSTREAM_AUTH=gcp-id-token"
 
 WEB_URL="$(gcloud run services describe retention-web --project "${PROJECT}" --region "${REGION}" --format='value(status.url)')"
 echo ""

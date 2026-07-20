@@ -24,8 +24,9 @@ The graded core is a **reliable AI layer**, not visual polish — that's where t
 - **First request may cold-start** — the service scales to zero (`min-instances=0`), so the first hit
   after idle takes a few seconds to spin up.
 - The live URL runs the **real Gemini** provider (not the mock). Reviewer interactions therefore make
-  real, billable LLM calls (a fraction of a cent each). The `api` service is public for demo
-  convenience; production would lock it behind service-to-service auth + budgets (see Out of scope).
+  real, billable LLM calls (a fraction of a cent each). The `api` service is **private** — only the
+  `web` service can call it (service-to-service auth via a Google-signed ID token), so the LLM can't
+  be billed by hitting `api` directly. Production would add per-agent budgets + spend caps on top.
 
 ---
 
@@ -146,6 +147,10 @@ Deliberate settings (and why):
   the production answer (see Out of scope).
 - **Real Gemini via ADC** — the API authenticates to Vertex AI with the Cloud Run **service-account
   identity** (no API key to store or leak).
+- **Private api + service-to-service auth** — `api` is deployed `--no-allow-unauthenticated`; only the
+  `web` runtime SA has `roles/run.invoker`, and the BFF attaches a Google-signed ID token
+  (`UPSTREAM_AUTH=gcp-id-token`, audience = api URL) to each upstream call. So the public surface is
+  just `web`; the LLM-calling `api` can't be reached directly.
 - **Seed-on-boot** — Cloud Run's filesystem is ephemeral, so the app seeds ~60 deterministic fake
   customers into SQLite on every boot. Fine for a demo; production would use a managed DB.
 

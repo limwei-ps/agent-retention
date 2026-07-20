@@ -8,6 +8,9 @@ import { type NextRequest } from "next/server";
 export const dynamic = "force-dynamic";
 
 const API_BASE_URL = process.env.API_BASE_URL ?? "http://localhost:8000";
+// When the upstream (api) is a private Cloud Run service, set UPSTREAM_AUTH=gcp-id-token so the BFF
+// authenticates service-to-service. Unset locally/compose (api is unauthenticated there).
+const UPSTREAM_AUTH = process.env.UPSTREAM_AUTH;
 
 function forwardRequestHeaders(source: Headers): Headers {
   const out = new Headers();
@@ -16,6 +19,30 @@ function forwardRequestHeaders(source: Headers): Headers {
   if (contentType) out.set("content-type", contentType);
   if (accept) out.set("accept", accept);
   return out;
+}
+
+// A Cloud Run ID token lasts ~1h; cache and refresh well before expiry to avoid a metadata hit per request.
+let cachedToken: { audience: string; token: string; expiresAt: number } | null = null;
+
+/** Fetch a Google-signed ID token (audience = the api service URL) from the Cloud Run metadata server. */
+async function getUpstreamIdToken(audience: string): Promise<string | null> {
+  if (UPSTREAM_AUTH !== "gcp-id-token") return null; // local/compose: api is public, no token needed
+  const now = Date.now();
+  if (cachedToken && cachedToken.audience === audience && now < cachedToken.expiresAt) {
+    return cachedToken.token;
+  }
+  try {
+    const res = await fetch(
+      `http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=${encodeURIComponent(audience)}`,
+      { headers: { "Metadata-Flavor": "Google" }, signal: AbortSignal.timeout(3000) },
+    );
+    if (!res.ok) return null;
+    const token = (await res.text()).trim();
+    cachedToken = { audience, token, expiresAt: now + 45 * 60 * 1000 };
+    return token;
+  } catch {
+    return null; // metadata server unavailable (not on Cloud Run) — proceed unauthenticated
+  }
 }
 
 async function proxy(req: NextRequest, segments: string[]): Promise<Response> {
@@ -27,9 +54,13 @@ async function proxy(req: NextRequest, segments: string[]): Promise<Response> {
   const target = `${API_BASE_URL}/api/${segments.join("/")}${req.nextUrl.search}`;
   const hasBody = req.method !== "GET" && req.method !== "HEAD";
 
+  const requestHeaders = forwardRequestHeaders(req.headers);
+  const idToken = await getUpstreamIdToken(API_BASE_URL);
+  if (idToken) requestHeaders.set("authorization", `Bearer ${idToken}`);
+
   const upstream = await fetch(target, {
     method: req.method,
-    headers: forwardRequestHeaders(req.headers),
+    headers: requestHeaders,
     body: hasBody ? await req.text() : undefined,
     redirect: "manual",
     // Propagate client aborts (tab close / navigate away) so the upstream generation is cancelled
