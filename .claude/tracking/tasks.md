@@ -125,4 +125,10 @@ All six gaps identified vs. the assignment brief are now closed.
   - [x] Docs + tracking updated (spec §3/§4.4, traceability, plan §8, README)
   - Deferred (accepted, plan §8): non-numeric fabricated-brand verification gap; `min>max` not rejected;
     CI SHA-pin + auto-deploy
-- [ ] Redeploy latest to Cloud Run (live URL still on v0.20.3)
+- [x] Redeploy latest to Cloud Run — 2026-07-20 (v0.23.6 live at retention-web-6xowpmfgjq-as.a.run.app)
+- [x] Harden the public URL before sharing — v0.24.0–0.25.3:
+  - [x] Backend $20/day LLM spend cap (`DailyBudget`; over-budget → clean error, cache stays free) — v0.24.0
+  - [x] Web HTTP Basic Auth gate + per-IP rate limit (`middleware.ts`; 401 / 429) — v0.25.0
+  - [x] Deploy env (`APP_PASSWORD`, `RATE_LIMIT_PER_MIN`, `LLM_DAILY_BUDGET_USD`) — v0.25.1
+  - [x] Docs + tracking — v0.25.2–0.25.3
+  - [ ] Redeploy with the gate/cap env (needs the shared `APP_PASSWORD` from the user)

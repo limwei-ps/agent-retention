@@ -84,3 +84,21 @@ user correction, add a rule that prevents the same mistake.
   `test_capitalized_fibre_prose_passes` (happy-path guard) + `test_all_catalog_names_not_flagged`
   (coupling guard); documented the accepted residual gap in `docs/take-home-plan.md` §8 instead of
   over-tightening.
+
+## 2026-07-20 — "Rate limiting" is three different things; and reach for the simplest gate
+
+- **Pattern:** Asked about rate limiting before making the URL public, I first over-scoped it — a
+  bespoke login page + signed-cookie session + login-endpoint limiter. The user pushed back ("is this
+  the simplest? auth is out of scope but I need to gate the URL"). The simplest gate that fits is
+  **HTTP Basic Auth in one middleware file** (browser-native prompt, one shared password) — no page,
+  cookie, or session. Also clarified that the codebase's "semaphore" is only a *within-batch* bulk
+  concurrency cap — NOT request rate limiting or a cost cap; a public URL on a paid LLM needs three
+  distinct layers: an auth **gate**, a per-IP request **rate limit**, and a hard **spend cap**.
+- **Rule:** Distinguish the three protection layers explicitly — don't let a concurrency semaphore
+  masquerade as "rate limiting." And when auth is out of scope but a gate is needed, start with the
+  simplest thing that works (Basic Auth) rather than building a login system; offer the minimal option
+  first and let the user opt up.
+- **How to apply:** `apps/web/src/middleware.ts` = Basic Auth + per-IP `/api/*` limiter (one file,
+  active only when `APP_PASSWORD` is set); `app/core/budget.py` = `$20/day` spend cap. Verified the gate
+  reads the **runtime** env in the production standalone build (a real risk — Next can inline
+  `process.env` at build time) by curling the built server with `APP_PASSWORD` set before deploying.

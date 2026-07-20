@@ -428,3 +428,36 @@ Each built in its own worktree, incrementally committed, verified, merged, and t
   are caught.
 - **Commits:** `v0.23.1`–`v0.23.6` (this tracking entry). Built in the `review-fixes` worktree, merged
   to `main`.
+
+## 2026-07-20 — Redeploy v0.23.6 to Cloud Run
+
+- **What:** Ran `deploy/deploy.sh` (PROJECT=easy-struct, asia-southeast1, tag 84cdb7c) — built+pushed
+  both images, deployed `retention-api` (private, real Gemini) + `retention-web` (public). Live at
+  https://retention-web-6xowpmfgjq-as.a.run.app. Prior live was v0.20.3.
+
+## 2026-07-20 — Harden the public URL: Basic-Auth gate + per-IP rate limit + $20/day spend cap
+
+- **What:** Before sharing the public URL with a few devs, added three protections (user chose the
+  simplest gate after rejecting a bespoke login-page design):
+  - `v0.24.0` feat — backend **daily LLM spend cap**: in-process `DailyBudget` (`app/core/budget.py`,
+    thread-safe, midnight rollover) checked before a fresh generation; over budget → clean SSE error,
+    no LLM call, no row, while **cache hits + last-cached fallbacks stay free**. Cost recorded via
+    `_log`; `/api/health` reports `daily_budget_usd`/`daily_spent_usd`/`budget_ok`. Config
+    `LLM_DAILY_BUDGET_USD` (0 = off; 20 in prod). +4 budget unit tests, +2 pitch-service tests.
+  - `v0.25.0` feat — web **HTTP Basic Auth gate + per-IP rate limit** in one new
+    `apps/web/src/middleware.ts`, active only when `APP_PASSWORD` is set (local dev / CI / e2e stay
+    open). Basic Auth over all routes incl. the `/api/*` BFF proxy (401 + `WWW-Authenticate`);
+    per-IP fixed-window limit on `/api/*` (`RATE_LIMIT_PER_MIN`, default 60) → 429 + `Retry-After`.
+    +6 middleware tests.
+  - `v0.25.1` chore — `deploy.sh` requires `APP_PASSWORD` (never committed) + passes
+    `RATE_LIMIT_PER_MIN` / `LLM_DAILY_BUDGET_USD`.
+  - `v0.25.2` docs — README / spec §4.8 / plan §8 / traceability updated.
+- **Why:** The public `web` URL runs real billable Gemini with no gate/rate-limit/cap; the "semaphore"
+  is only a within-batch bulk cap, not request/cost control (CLAUDE.md §4 "rate limiting").
+- **Key decision:** Basic Auth (one shared password, browser-native prompt) over a custom login
+  page/cookie — auth is out of scope, so a shared gate is enough and far simpler. Cost cap + rate limit
+  are in-process (coherent at `max-instances=1`); a wider fleet needs Redis (noted in plan §8).
+- **Verification:** backend pytest 106; web vitest 34; typecheck/lint clean. Critical teeth step —
+  **built the standalone web image and ran it with `APP_PASSWORD` set**: `/` → 401 +
+  `WWW-Authenticate`, correct creds → 200, wrong → 401 (confirms middleware reads the *runtime* env in
+  the production build, not a build-time inline). Redeploy with the new env pending the user's password.
