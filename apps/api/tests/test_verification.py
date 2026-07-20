@@ -6,6 +6,11 @@ from app.ai.verification import verify_grounding
 LADDER = build_offer_ladder("fibre_300", monthly_price=129, tenure_months=12, archetype="heavy")
 REC = next(r for r in LADDER.rungs if r.type == LADDER.recommended)
 
+# High tenure → recommended = retain (same plan, TIME Fibre 300 @ ~RM 110).
+RETAIN_LADDER = build_offer_ladder(
+    "fibre_300", monthly_price=129, tenure_months=48, archetype="flat_low"
+)
+
 
 def _pitch(price: int, plan: str = "TIME Fibre 500") -> str:
     return f"Upgrade to {plan} at RM {price}/month for 24 months. Great value!"
@@ -73,6 +78,24 @@ def test_capitalized_fibre_prose_passes() -> None:
         text = f"{prose}: upgrade to TIME Fibre 500 at RM 159/month for 24 months."
         result = verify_grounding(text, LADDER, current_price=129)
         assert result.ok, f"prose wrongly flagged: {prose} -> {result.invented_plans}"
+
+
+def test_speed_suffixed_plan_passes() -> None:
+    # Real models write the plan WITH its speed unit ("TIME Fibre 300Mbps"); the catalog name omits
+    # it. This is fully grounded (right tier + price) and must NOT be flagged — the false positive
+    # that made single-pitch regenerate loop: out-of-catalog plan → regenerate → fallback.
+    for name in ("TIME Fibre 300Mbps", "TIME Fibre 300 Mbps"):
+        text = f"Recontract your {name} plan for just RM 110/month on a 24-month term."
+        result = verify_grounding(text, RETAIN_LADDER, current_price=129)
+        assert result.ok, f"speed-suffixed plan wrongly flagged: {name} -> {result}"
+
+
+def test_invented_number_with_speed_unit_still_fails() -> None:
+    # Normalizing the unit must not blunt real inventions: a wrong number keeps failing.
+    text = "Upgrade to TIME Fibre 9000Mbps at RM 159/month."
+    result = verify_grounding(text, LADDER, current_price=129)
+    assert not result.ok
+    assert result.reason == "out-of-catalog plan"
 
 
 def test_all_catalog_names_not_flagged() -> None:

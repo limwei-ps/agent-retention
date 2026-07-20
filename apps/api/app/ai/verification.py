@@ -22,6 +22,14 @@ _AMOUNT_RE = re.compile(r"RM\s?(\d+)")
 # the amount allow-list; a fabricated brand with a non-numeric suffix ("MaxSpeed Fibre Ultra") is an
 # accepted residual gap (docs/take-home-plan.md §8).
 _PLAN_RE = re.compile(r"\b[A-Za-z][A-Za-z0-9]* Fib(?:re|er) \d\S*")
+# Real models append the speed unit the catalog name omits ("TIME Fibre 300Mbps" vs catalog
+# "TIME Fibre 300"). Fold a trailing Mbps/Gbps away before the catalog membership test so that
+# grounded phrasing isn't flagged — wrong numbers / misspelt brands survive and are still caught.
+_SPEED_UNIT_RE = re.compile(r"\s*(?:mbps|gbps)\.?$", re.IGNORECASE)
+
+
+def _normalize_plan(name: str) -> str:
+    return _SPEED_UNIT_RE.sub("", name.rstrip(".,;:")).strip()
 
 
 @dataclass(frozen=True)
@@ -33,7 +41,7 @@ class VerificationResult:
 
 
 def verify_grounding(text: str, ladder: OfferLadder, current_price: int) -> VerificationResult:
-    catalog_names = {p.name for p in CATALOG}
+    catalog_names = {_normalize_plan(p.name) for p in CATALOG}
     allowed_amounts = (
         {current_price} | {p.price_myr for p in CATALOG} | {r.monthly_price for r in ladder.rungs}
     )
@@ -41,7 +49,7 @@ def verify_grounding(text: str, ladder: OfferLadder, current_price: int) -> Veri
     found_amounts = {int(m) for m in _AMOUNT_RE.findall(text)}
     invented_amounts = tuple(sorted(found_amounts - allowed_amounts))
 
-    mentioned_plans = {m.rstrip(".,;:") for m in _PLAN_RE.findall(text)}
+    mentioned_plans = {_normalize_plan(m) for m in _PLAN_RE.findall(text)}
     invented_plans = tuple(sorted(p for p in mentioned_plans if p not in catalog_names))
 
     rec = next(r for r in ladder.rungs if r.type == ladder.recommended)
