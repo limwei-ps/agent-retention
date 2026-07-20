@@ -1,5 +1,8 @@
+from datetime import timedelta
+
 from sqlalchemy import event
 
+from app.core.timeutil import current_month_bounds
 from app.models.pitch import Pitch, PitchStatus
 
 
@@ -85,6 +88,34 @@ def test_detail_returns_offer_ladder_and_usage(client, db_session, make_customer
     assert len(body["offer_ladder"]["rungs"]) == 3
     assert body["usage_history"][0]["month"] == "2026-06"
     assert body["latest_pitch"] is None
+
+
+def test_filter_expiring_this_month(client, db_session, make_customer):
+    # Time-robust: seed relative to the same calendar-month window the endpoint uses.
+    start, end = current_month_bounds("Asia/Kuala_Lumpur")
+    _seed(
+        db_session,
+        make_customer,
+        [
+            {"id": "CUST-00001", "plan": "fibre_100", "contract_end_date": start},
+            {"id": "CUST-00002", "plan": "fibre_100", "contract_end_date": end},
+            {"id": "CUST-00003", "plan": "fibre_500", "contract_end_date": start},
+            {
+                "id": "CUST-00004",
+                "plan": "fibre_100",
+                "contract_end_date": start - timedelta(days=1),
+            },
+            {"id": "CUST-00005", "plan": "fibre_100", "contract_end_date": end + timedelta(days=1)},
+        ],
+    )
+
+    expiring = client.get("/api/customers", params={"expiring": "true"}).json()
+    assert {c["id"] for c in expiring["data"]} == {"CUST-00001", "CUST-00002", "CUST-00003"}
+
+    scoped = client.get("/api/customers", params={"expiring": "true", "plan": "fibre_100"}).json()
+    assert {c["id"] for c in scoped["data"]} == {"CUST-00001", "CUST-00002"}
+
+    assert client.get("/api/customers").json()["total"] == 5  # unfiltered still sees all
 
 
 def test_detail_404_for_unknown(client):

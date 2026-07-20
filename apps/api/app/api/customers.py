@@ -6,6 +6,8 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
+from app.core.config import settings
+from app.core.timeutil import current_month_bounds
 from app.repositories.customer_repository import (
     SqlCustomerRepository,
     get_customer_repository,
@@ -25,10 +27,22 @@ def list_customers(
     order: Literal["asc", "desc"] = "asc",
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
+    expiring: bool = Query(default=False, description="only contracts ending this calendar month"),
     repo: SqlCustomerRepository = Depends(get_customer_repository),
 ) -> Page[CustomerSummary]:
+    # "Expiring" reuses the dashboard's calendar-month window so the list matches the tile counts.
+    expiring_from, expiring_to = (
+        current_month_bounds(settings.app_timezone) if expiring else (None, None)
+    )
     rows, total = repo.list(
-        search=search, plan=plan, sort=sort, order=order, page=page, page_size=page_size
+        search=search,
+        plan=plan,
+        sort=sort,
+        order=order,
+        page=page,
+        page_size=page_size,
+        expiring_from=expiring_from,
+        expiring_to=expiring_to,
     )
     return Page(
         data=[to_summary(c) for c in rows],

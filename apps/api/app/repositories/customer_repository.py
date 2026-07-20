@@ -35,6 +35,8 @@ class CustomerRepository(Protocol):
         order: str,
         page: int,
         page_size: int,
+        expiring_from: date | None = None,
+        expiring_to: date | None = None,
     ) -> tuple[list[Customer], int]: ...
 
     def get(self, customer_id: str) -> Customer | None: ...
@@ -55,6 +57,8 @@ class SqlCustomerRepository:
         order: str,
         page: int,
         page_size: int,
+        expiring_from: date | None = None,
+        expiring_to: date | None = None,
     ) -> tuple[list[Customer], int]:
         stmt = select(Customer)
         if search:
@@ -62,6 +66,11 @@ class SqlCustomerRepository:
             stmt = stmt.where(Customer.name.ilike(like) | Customer.id.ilike(like))
         if plan:
             stmt = stmt.where(Customer.current_plan_id == plan)
+        if expiring_from is not None and expiring_to is not None:
+            stmt = stmt.where(
+                Customer.contract_end_date >= expiring_from,
+                Customer.contract_end_date <= expiring_to,
+            )
 
         # Count over the filtered predicate only (before options/order/paging).
         total = self._db.scalar(select(func.count()).select_from(stmt.subquery())) or 0

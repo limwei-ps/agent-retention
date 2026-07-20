@@ -421,6 +421,8 @@ export interface operations {
                 order?: "asc" | "desc";
                 page?: number;
                 page_size?: number;
+                /** @description only contracts ending this calendar month */
+                expiring?: boolean;
             };
             header?: never;
             path?: never;
