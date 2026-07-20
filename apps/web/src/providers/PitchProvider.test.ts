@@ -12,6 +12,7 @@ const DONE: PitchDoneData = {
   cost_usd: 0,
   prompt_tokens: 10,
   completion_tokens: 20,
+  trace_id: "abc123",
 };
 
 const ID = "CUST-1";

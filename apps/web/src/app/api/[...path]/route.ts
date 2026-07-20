@@ -71,6 +71,8 @@ async function proxy(req: NextRequest, segments: string[]): Promise<Response> {
   const headers = new Headers();
   const contentType = upstream.headers.get("content-type");
   if (contentType) headers.set("content-type", contentType);
+  const traceId = upstream.headers.get("x-trace-id");
+  if (traceId) headers.set("x-trace-id", traceId); // expose the correlation id to the browser
   if (contentType?.includes("text/event-stream")) {
     headers.set("cache-control", "no-cache, no-transform");
     headers.set("x-accel-buffering", "no");

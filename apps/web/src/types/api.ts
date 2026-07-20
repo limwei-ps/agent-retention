@@ -38,6 +38,7 @@ export interface PitchDoneData {
   cost_usd: number;
   prompt_tokens: number;
   completion_tokens: number;
+  trace_id: string;
 }
 
 export type PitchStreamEvent =

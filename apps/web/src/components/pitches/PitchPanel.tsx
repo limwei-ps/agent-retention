@@ -98,6 +98,7 @@ export function PitchPanel({
               {pitch.meta.stale ? " · stale fallback" : ""} · grounded{" "}
               {pitch.meta.grounding_ok ? "✓" : "✗"} · ${pitch.meta.cost_usd.toFixed(4)} ·{" "}
               {pitch.meta.prompt_tokens + pitch.meta.completion_tokens} tok
+              {pitch.meta.trace_id ? ` · trace ${pitch.meta.trace_id}` : ""}
             </span>
           ) : (
             <span>
