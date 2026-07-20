@@ -13,7 +13,18 @@ const SORTS: { value: "contract_end_date" | "tenure" | "avg_gb"; label: string }
 ];
 
 export function Filters() {
-  const { search, plan, sort, order, setSearch, setPlan, setSort, toggleOrder } = useFilters();
+  const {
+    search,
+    plan,
+    sort,
+    order,
+    expiring,
+    setSearch,
+    setPlan,
+    setSort,
+    toggleOrder,
+    setExpiring,
+  } = useFilters();
   const { data: dashboard } = useDashboard();
 
   // Debounce the text input so each keystroke doesn't refetch.
@@ -64,6 +75,16 @@ export function Filters() {
       <Button variant="secondary" onClick={toggleOrder} aria-label="Toggle sort order">
         {order === "asc" ? "↑ Asc" : "↓ Desc"}
       </Button>
+      {expiring && (
+        <button
+          type="button"
+          onClick={() => setExpiring(false)}
+          aria-label="Clear expiring-this-month filter"
+          className="border-fibre/40 bg-fibre/10 text-fibre-deep hover:bg-fibre/20 inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium"
+        >
+          Expiring this month <span aria-hidden>✕</span>
+        </button>
+      )}
     </div>
   );
 }

@@ -18,6 +18,7 @@ export interface CustomerQuery {
   order?: "asc" | "desc";
   page?: number;
   page_size?: number;
+  expiring?: boolean; // only contracts ending this calendar month
 }
 
 export function customersPath(q: CustomerQuery): string {
@@ -28,6 +29,7 @@ export function customersPath(q: CustomerQuery): string {
   if (q.order) params.set("order", q.order);
   if (q.page) params.set("page", String(q.page));
   if (q.page_size) params.set("page_size", String(q.page_size));
+  if (q.expiring) params.set("expiring", "true");
   const qs = params.toString();
   return `/api/customers${qs ? `?${qs}` : ""}`;
 }

@@ -14,6 +14,7 @@ interface FiltersState {
   order: Order;
   page: number;
   pageSize: number;
+  expiring: boolean; // only contracts ending this calendar month
 }
 
 const DEFAULTS: FiltersState = {
@@ -23,6 +24,7 @@ const DEFAULTS: FiltersState = {
   order: "asc",
   page: 1,
   pageSize: 10,
+  expiring: false,
 };
 
 interface FiltersContextValue extends FiltersState {
@@ -32,6 +34,9 @@ interface FiltersContextValue extends FiltersState {
   setSort: (v: SortKey) => void;
   toggleOrder: () => void;
   setPage: (v: number) => void;
+  setExpiring: (v: boolean) => void;
+  /** Dashboard-tile shortcut: filter to a plan (or "" for all) expiring this month. */
+  focusExpiring: (plan: string) => void;
 }
 
 const FiltersContext = createContext<FiltersContextValue | null>(null);
@@ -55,6 +60,7 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
     };
     if (state.search.trim()) query.search = state.search.trim();
     if (state.plan) query.plan = state.plan;
+    if (state.expiring) query.expiring = true;
     return {
       ...state,
       query,
@@ -63,6 +69,8 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
       setSort: (v) => patch({ sort: v }),
       toggleOrder: () => patch({ order: state.order === "asc" ? "desc" : "asc" }),
       setPage: (v) => patch({ page: v }, false),
+      setExpiring: (v) => patch({ expiring: v }),
+      focusExpiring: (plan) => patch({ plan, expiring: true }),
     };
   }, [state, patch]);
 
