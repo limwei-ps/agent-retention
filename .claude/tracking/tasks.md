@@ -102,3 +102,15 @@ Master task list. Mark done with `[x]` and a date; add new tasks in place. Synce
 - `[x] [GAP #6]` coding conventions pinned (CLAUDE.md + plan §9) — 2026-07-19
 
 All six gaps identified vs. the assignment brief are now closed.
+
+## Post-Day-5 enhancements (user requests, 2026-07-20)
+
+- [x] Customer-table row select ("highlight then open") + page size 10 — v0.19.0–0.19.1
+- [x] "Fibre Signal" UI redesign (fonts, tokens, top bar, pitch console + streaming rule, usage
+      waveform, offer ladder); light-first + auto dark — v0.20.0–0.20.2
+- [x] Fix api Docker startup (run prebuilt venv uvicorn; Cloud Run health check) — v0.20.3
+- [x] Clickable dashboard tiles → filter list by plan + expiring-this-month (new `expiring` API
+      filter, active highlight, clear chip) — v0.21.0–0.21.1
+- [x] Observability: request trace id (X-Trace-Id, per-item bulk ids, on every log line + pitch
+      footer) + Prometheus metrics at `GET /api/metrics` — v0.22.0–0.22.3
+- [ ] Redeploy latest to Cloud Run (live URL still on v0.20.3)

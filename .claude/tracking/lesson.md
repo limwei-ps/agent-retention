@@ -54,3 +54,15 @@ user correction, add a rule that prevents the same mistake.
 - **How to apply:** Normalized the worktree's web files back to LF in the working copy (git-invisible
   under autocrlf) so the hook passed and only intended files were staged; flagged `.gitattributes` as
   follow-up repo hygiene.
+
+## 2026-07-20 — Keep the tracking folder current per feature, not just per day
+
+- **Pattern:** Through Day 5 I updated `history.md`/`tasks.md` diligently, but across a run of rapid
+  post-Day-5 feature requests (row-select, redesign, tile filter, observability) I updated code +
+  commits but let the tracking folder go stale — the user had to ask "did you update the tracking
+  folder?" §9 says append-only history **after every change**, not only at day milestones.
+- **Rule:** Treat the tracking update as part of "done" for every feature/worktree, alongside tests
+  and the commit — not a per-day batch. When merging a feature branch, append a `history.md` entry and
+  tick/append `tasks.md` in the same wrap-up.
+- **How to apply:** Backfilled the post-Day-5 entries in `history.md` + `tasks.md`; going forward,
+  include a tracking-update step in each feature's plan/verification checklist.

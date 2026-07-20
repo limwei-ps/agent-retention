@@ -354,3 +354,30 @@ key decisions.
 - **GIF:** cannot screen-record here; README has a ready-to-uncomment embed for `docs/streaming-demo.gif`.
 - **Verification:** api 82 pytest, web 12 vitest, 2 Playwright E2E, compose build+run, live smoke —
   all pass; typecheck/lint/prettier/ruff/mypy clean; hooks green on every commit.
+
+## 2026-07-20 — Post-Day-5 enhancements (user feature requests)
+
+Each built in its own worktree, incrementally committed, verified, merged, and tagged. All kept the
+82→90 pytest / 12→14 vitest / 2 E2E suites green.
+
+- **v0.19.0–0.19.1 — customer-table row select + page size.** Whole row is click-to-select then
+  click-to-open ("highlight then open"); name link still opens directly (keeps the E2E). Default list
+  page size 20 → 10. (`CustomerTable.tsx`, `FiltersProvider.tsx`; +1 vitest.)
+- **v0.20.0–0.20.3 — "Fibre Signal" redesign.** New identity (cool instrument palette + Space Grotesk /
+  IBM Plex Sans/Mono fonts, fixed the stray Arial body font), top bar, restyled dashboard/table/filters
+  + pitch console with the animated fibre streaming rule, usage signal-trace waveform, and a styled
+  offer-ladder on the detail page. Light-first, auto dark. Presentation-only (labels/selectors
+  preserved). v0.20.3 also fixed the api Docker image to run the prebuilt venv's uvicorn directly
+  (`uv run` was re-syncing at startup and failing Cloud Run's health check). Verified via Playwright
+  screenshots (light/dark/mobile/streaming).
+- **v0.21.0–0.21.1 — clickable dashboard tiles.** `GET /customers` gains an `expiring` filter (current
+  calendar month, reuses `current_month_bounds` so counts match the tiles); tiles are buttons that
+  filter the list to plan + expiring-this-month, with an active highlight, an "Expiring this month ✕"
+  chip, and re-click to clear. (v0.21.2 was a requirements-traceability doc added by the user.)
+- **v0.22.0–0.22.3 — observability.** Request **trace id** (ContextVar + logging filter → every JSON
+  line; pure-ASGI middleware; `X-Trace-Id` header; per-item `batch{id}-{customer}` for bulk) +
+  in-process **Prometheus metrics** at `GET /api/metrics` (generations/cache/regen/fallbacks/tokens/
+  cost/http), no new deps. Trace id surfaced in the SSE `done` payload + pitch footer + BFF passthrough.
+  README documents both. +7 pytest (tracing + metrics). Backend teeth confirmed one trace id ties a
+  request's access + generation logs and the metrics counters increment.
+- **Not yet redeployed:** the live URL still serves v0.20.3; these later changes await the next deploy.
