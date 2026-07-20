@@ -227,7 +227,10 @@ Structure per `docs/take-home-plan.md` §9. Screens:
 - **Detail** (`/customers/[id]`): customer info + usage history on one side, pitch panel on the other
   (**side by side**). Pitch panel streams token-by-token, shows the status state machine
   (`not_generated`/`generating`/`ready`/`failed`), and offers **copy** + **regenerate** (force).
-- **Bulk progress**: live X-of-N bar + per-item status list, fed by the bulk SSE/poll endpoint.
+- **Bulk progress**: live X-of-N bar + per-item status list, fed by the bulk SSE/poll endpoint. The
+  batch id is persisted in `sessionStorage` (via `useBulkGeneration`) so the panel survives opening a
+  pitch and navigating back, and is cleared when the customer-list query changes so a filter change
+  doesn't leave a stale panel.
 
 State: `PitchProvider` (per-pitch state machine), `FiltersProvider` (list query state), TanStack
 Query for server state; `usePitchStream` consumes the SSE pass-through from the route handler.

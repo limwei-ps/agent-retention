@@ -46,7 +46,8 @@ The graded core is a **reliable AI layer**, not visual polish — that's where t
   `failed`), and offers **copy** + **regenerate** (force refresh).
 - **Bulk progress**: a live panel with the animated fibre rail, a Queued / Generating / Ready / Failed
   count readout, an action-first per-item list (failures first, ready items link to the pitch), and a
-  Retry-failed action.
+  Retry-failed action. The panel persists across navigation (open a pitch and come back) and clears
+  when the filter changes.
 
 ---
 
