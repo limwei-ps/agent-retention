@@ -26,8 +26,11 @@ class JsonFormatter(logging.Formatter):
 
 
 def configure_logging(level: int = logging.INFO) -> None:
+    from app.core.tracing import TraceIdFilter
+
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(JsonFormatter())
+    handler.addFilter(TraceIdFilter())  # stamp trace_id onto every line
     root = logging.getLogger()
     root.handlers = [handler]
     root.setLevel(level)

@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.ai.llm_provider import LLMChain
 from app.ai.single_flight import SingleFlight
+from app.core.tracing import bind_trace_id
 from app.repositories.customer_repository import SqlCustomerRepository
 from app.repositories.pitch_repository import SqlPitchRepository
 from app.services.batch_registry import BatchRegistry
@@ -67,6 +68,8 @@ async def _generate_one(
     force: bool,
 ) -> None:
     """Generate one pitch in its own session; isolate every failure to this item."""
+    # Each worker runs in its own contextvar copy → per-item trace id correlates this item's logs.
+    bind_trace_id(f"batch{batch_id}-{customer_id}")
     await registry.mark_running(batch_id, customer_id)
     db = None
     try:

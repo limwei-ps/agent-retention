@@ -15,6 +15,7 @@ from app.ai.single_flight import SingleFlight
 from app.api import customers, dashboard, health, pitches
 from app.core.config import settings
 from app.core.logging import configure_logging
+from app.core.tracing import TraceIdMiddleware
 from app import models  # noqa: F401  (import models so Base.metadata sees every table)
 from app.db.seed import seed_if_empty
 from app.db.session import Base, SessionLocal, engine
@@ -32,6 +33,9 @@ async def lifespan(app: FastAPI):
 def create_app() -> FastAPI:
     configure_logging()
     app = FastAPI(title=settings.app_name, version=__version__, lifespan=lifespan)
+
+    # Correlation trace id on every request + log line (X-Trace-Id header out).
+    app.add_middleware(TraceIdMiddleware)
 
     # Process-wide registries (built here, not in lifespan, so tests that skip lifespan still
     # have them on app.state).
