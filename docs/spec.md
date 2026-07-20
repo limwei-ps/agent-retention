@@ -137,13 +137,17 @@ catalog prices ∪ offer-ladder rung prices) and that the recommended plan name 
 plan-name check targets **numeric plan identifiers** — `<brand> Fibre/Fiber <digit…>` (all catalog
 names are digit-suffixed, e.g. `TIME Fibre 100` … `TIME Fibre 1Gbps`) — so it flags misspellings and
 numeric fabrications (`TIME Fiber 300`, `TIME Fibre 9000`, `MaxSpeed Fibre 900`) without false-flagging
-ordinary prose ("TIME Fibre plans", "Our Fibre network"). On failure: mark `grounding_ok=false` and
-**auto-regenerate once**; if it fails again, advance the fallback chain rather than serve a hallucinated
-pitch. This turns "prompted carefully" into a reliability guarantee.
+ordinary prose ("TIME Fibre plans", "Our Fibre network"). A trailing **speed unit is folded away**
+before the catalog match, so the natural phrasing `TIME Fibre 300Mbps` ≡ catalog `TIME Fibre 300`
+(models routinely append the unit the catalog name omits — this was the real cause of a
+regenerate→fallback loop). On failure: mark `grounding_ok=false` and **auto-regenerate once**; if it
+fails again, advance the fallback chain rather than serve a hallucinated pitch. This turns "prompted
+carefully" into a reliability guarantee.
 
-_Accepted residual gap:_ a fabricated brand with a **non-numeric** suffix ("MaxSpeed Fibre Ultra")
-isn't caught by the plan-name regex — but a fabricated **price** still is, and the model is instructed
-to quote only listed plans. See `docs/take-home-plan.md` §8.
+_Accepted residual gaps:_ a fabricated brand with a **non-numeric** suffix ("MaxSpeed Fibre Ultra")
+isn't caught by the plan-name regex; and the top tier written as "1000Mbps" won't match catalog
+"1Gbps". Both are rare and degrade to a harmless regenerate — a fabricated **price** is still caught,
+and the model is instructed to quote only listed plans. See `docs/take-home-plan.md` §8.
 
 ### 4.5 Concurrency / backpressure
 Bulk generation runs under an **asyncio semaphore** (concurrency cap, config constant). **Single-

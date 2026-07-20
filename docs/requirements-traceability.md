@@ -31,7 +31,7 @@ are relative to the repo root. This mirrors the PDF's own section order.
 
 - [x] **Generate pitches in bulk for a filtered segment, with progress tracking**
   - `apps/api/app/api/pitches.py` (`POST /pitches/bulk`, `/bulk/{id}/stream`) + `apps/api/app/services/bulk_pitch_service.py` + `batch_registry.py` — semaphore-bounded fan-out with live X-of-N + per-item status.
-  - `apps/web/src/components/pitches/BulkGenerate.tsx`, `BulkProgress.tsx`, `apps/web/src/hooks/useBulkGeneration.ts` — triggers the segment, renders a live progress bar + per-item list.
+  - `apps/web/src/components/pitches/BulkGenerate.tsx`, `BulkProgress.tsx`, `apps/web/src/hooks/useBulkGeneration.ts` — triggers the segment; a "transmission" panel with the signature animated fibre rail, a four-channel StatTile readout (Queued/Generating/Ready/Failed), an action-first item list (failures first, Ready rows link to the pitch), and a **Retry failed** action.
 
 - [x] **See, copy, and regenerate pitches**
   - `apps/web/src/components/pitches/PitchPanel.tsx` — clipboard copy, and a "Regenerate" control that issues `force=true` (cache bypass).

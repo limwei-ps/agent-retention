@@ -44,7 +44,9 @@ The graded core is a **reliable AI layer**, not visual polish — that's where t
 - **Detail** (`/customers/[id]`): customer info + usage history side-by-side with a pitch panel that
   **streams token-by-token**, shows a status state machine (`not_generated` → `generating` → `ready` /
   `failed`), and offers **copy** + **regenerate** (force refresh).
-- **Bulk progress**: live X-of-N progress bar + per-item status.
+- **Bulk progress**: a live panel with the animated fibre rail, a Queued / Generating / Ready / Failed
+  count readout, an action-first per-item list (failures first, ready items link to the pitch), and a
+  Retry-failed action.
 
 ---
 
