@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+# Least privilege: none of these jobs write to the repo or use secrets.
+permissions:
+  contents: read
+
 jobs:
   backend:
     name: backend (ruff + pytest)
@@ -21,7 +25,7 @@ jobs:
       - run: uv sync
       - run: uv run ruff format --check app tests scripts
       - run: uv run ruff check app tests
-      - run: uv run pytest --cov=app --cov-report=term-missing
+      - run: uv run pytest --cov=app --cov-report=term-missing --cov-fail-under=85
 
   frontend:
     name: frontend (lint + typecheck + vitest)
