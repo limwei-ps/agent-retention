@@ -526,3 +526,24 @@ Each built in its own worktree, incrementally committed, verified, merged, and t
   merged; tagged v0.26.0; one redeploy (PROJECT now required explicitly).
 - **Verification:** backend pytest 108 (incl. 2 new speed-unit tests); web vitest 36 (rewritten
   BulkProgress test); typecheck + lint clean; Playwright E2E 2 passed (bulk panel + streaming).
+
+## 2026-07-20 — Bulk panel: survive navigation + reset on filter change (v0.26.4)
+
+- **Bugs:** (1) opening a pitch from the bulk panel and navigating back lost the whole panel — the
+  dashboard page (and the hook's `batchId`) remount on that round trip; (2) changing a dashboard filter
+  left a stale panel for the previous segment.
+- **First attempt (reverted):** lifted bulk state into a layout-level `BulkProvider`. It **regressed
+  the whole app** — customer/dashboard queries stopped firing (0 `/api` requests, stuck "Loading",
+  client nav broke). Confirmed it was the change (not env) by proving the pitch-stream E2E passes on
+  `main` but failed on the branch. Root cause of the regression not fully isolated; abandoned the
+  approach as too risky.
+- **Fix (shipped):** keep the page-level `useBulkGeneration` hook (no provider-tree change) + persist
+  `batchId` in **sessionStorage** (restores on remount → survives nav) + clear it when the list query
+  changes. The reset compares the **previous query key** via a ref, not a first-render flag — Strict
+  Mode double-invokes the mount effect with the same ref, which defeated the boolean guard and wiped
+  the restored batch (the exact reason the first E2E attempt failed at "panel visible after back").
+- **Verification:** web vitest 39 (3 new hook tests: persist / reset / restore); typecheck + lint
+  clean; Playwright E2E **3 passed** (streaming + bulk basic + the new open-pitch→back→filter lifecycle).
+- **Debugging note:** most of the time here was leftover-process pollution — a zombie `next dev` from a
+  manual debug server held Next's per-dir lock and made the E2E webServer fail to start; killing it
+  cleared the false failures. Lesson logged.

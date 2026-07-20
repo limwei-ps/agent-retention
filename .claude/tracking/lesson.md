@@ -119,3 +119,21 @@ user correction, add a rule that prevents the same mistake.
 - **How to apply:** `verification._normalize_plan` folds a trailing Mbps/Gbps before the catalog match;
   root-caused with `gcloud logging read` + a curl of the live SSE `/pitch` stream (force=true) before
   writing the fix; failing test first.
+
+## 2026-07-20 — Strict Mode defeats first-render flags; and clean up debug servers
+
+- **Pattern:** A "reset state when a value changes" effect guarded by a `useRef(true)` first-render
+  flag silently broke: in dev **Strict Mode**, React double-invokes mount effects with the **same**
+  ref instance, so the second invocation saw `first.current === false` and ran the reset — wiping the
+  value I'd just restored from sessionStorage (bulk panel didn't survive navigation). Prod build would
+  have worked (no double-invoke), so it only failed in the dev-mode E2E — easy to misread as flaky.
+- **Rule:** To react to an *actual* change, compare the **previous value** via a ref
+  (`if (last.current === key) return; last.current = key; …`), never a boolean "is first render" flag —
+  it's Strict-Mode-safe and prod/dev-consistent. Also: prefer lifting cross-route state minimally
+  (sessionStorage + a page hook) over a new layout provider when unsure — my layout-`BulkProvider`
+  attempt regressed all data fetching; the smaller change was safer and shippable.
+- **Process:** two red herrings cost time here — (a) a **zombie `next dev`** from a manual debug server
+  survived `TaskStop` and held Next's per-directory lock, making the E2E webServer fail to start
+  ("Another next dev server is already running"); (b) a **corrupted `.next/dev/types`** from a killed
+  dev server broke `tsc`. Kill stray dev servers by PID and `rm -rf .next` before trusting E2E/typecheck
+  signals; confirm cause vs environment by running the suspect test on `main`.

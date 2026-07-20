@@ -140,3 +140,6 @@ All six gaps identified vs. the assignment brief are now closed.
 - [x] Redesign bulk generation UI (Fibre-Signal transmission panel: fibre rail, four StatTiles,
       action-first list w/ pitch links, retry-failed) — v0.26.0; shared `ui/StatTile.tsx` extracted
 - [x] Docs + tracking for the fix + redesign — v0.26.1–0.26.2; tag v0.26.0; redeploy
+- [x] Bulk panel: survive navigation (sessionStorage) + reset on filter change — v0.26.4:
+      page-level hook (layout-provider attempt regressed data fetching, reverted); ref-compare reset
+      (Strict-Mode-safe); +3 hook tests + E2E lifecycle. v0.26.5 tracking.
