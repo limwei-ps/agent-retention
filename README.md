@@ -69,17 +69,17 @@ Browser ──► Next.js (App Router)  ──►  FastAPI (Python)  ──►  
 
 Every mechanism is hand-rolled so we own and can defend it. All are covered by the pytest suite.
 
-| Decision                      | How                                                                                                                                                                                                   | Where                                                                  |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| **Grounding**                 | Inject the customer's real plan / tenure / usage + the offer ladder into the prompt; the model must not invent numbers.                                                                               | `app/ai/grounding.py`, `app/ai/prompt.py`                              |
-| **Output verification**       | After generation, programmatically require the recommended plan name + price and reject any out-of-catalog RM amount; regenerate once on failure, then fall back.                                     | `app/ai/verification.py`                                               |
-| **Cache + invalidation**      | Cache key = SHA-256 over the exact grounding facts **+ model id + prompt-template version**. Prompt tweaks or changed inputs invalidate old pitches. Cache hits replay as a stream for consistent UX. | `app/ai/grounding.py` (`cache_key`)                                    |
-| **Regenerate = cache bypass** | A `force` flag bypasses cache **and** single-flight, so regenerate is never served a stale pitch.                                                                                                     | `app/services/pitch_service.py`                                        |
-| **Single-flight coalescing**  | Concurrent identical requests collapse onto one in-flight generation (leader/follower futures keyed by cache key).                                                                                    | `app/ai/single_flight.py`                                              |
-| **Fallback chain**            | `gemini-2.5-pro → gemini-2.5-flash → last-cached (stale) → clean error`; each hop regenerates once on ungrounded output. Every failure normalizes to `ProviderError`.                                 | `app/services/pitch_service.py`, `app/ai/llm_client.py`                |
-| **Bulk backpressure**         | `asyncio.Semaphore` concurrency cap; per-item success/failure tracked; a mid-batch failure never aborts the batch. Live progress via an in-process registry + SSE, with a DB snapshot for reconnect.  | `app/services/bulk_pitch_service.py`, `app/services/batch_registry.py` |
-| **SQLite write contention**   | WAL journal + `busy_timeout=5000` so concurrent bulk writers don't hit "database is locked".                                                                                                          | `app/db/session.py`                                                    |
-| **Cost & observability**      | Structured JSON log per call: model, cache-hit, prompt/completion tokens, `cost_usd`, latency, grounding_ok, fallback hop.                                                                            | `app/services/pitch_service.py`, `app/ai/pricing.py`                   |
+| Decision                      | How                                                                                                                                                                                                                  | Where                                                                         |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| **Grounding**                 | Inject the customer's real plan / tenure / usage + the offer ladder into the prompt; the model must not invent numbers.                                                                                              | `app/ai/grounding.py`, `app/ai/prompt.py`                                     |
+| **Output verification**       | After generation, programmatically require the recommended plan name + price and reject any out-of-catalog RM amount; regenerate once on failure, then fall back.                                                    | `app/ai/verification.py`                                                      |
+| **Cache + invalidation**      | Cache key = SHA-256 over the exact grounding facts **+ model id + prompt-template version**. Prompt tweaks or changed inputs invalidate old pitches. Cache hits replay as a stream for consistent UX.                | `app/ai/grounding.py` (`cache_key`)                                           |
+| **Regenerate = cache bypass** | A `force` flag bypasses cache **and** single-flight, so regenerate is never served a stale pitch.                                                                                                                    | `app/services/pitch_service.py`                                               |
+| **Single-flight coalescing**  | Concurrent identical requests collapse onto one in-flight generation (leader/follower futures keyed by cache key).                                                                                                   | `app/ai/single_flight.py`                                                     |
+| **Fallback chain**            | `gemini-2.5-pro → gemini-2.5-flash → last-cached (stale) → clean error`; each hop regenerates once on ungrounded output. Every failure normalizes to `ProviderError`.                                                | `app/services/pitch_service.py`, `app/ai/llm_client.py`                       |
+| **Bulk backpressure**         | `asyncio.Semaphore` concurrency cap; per-item success/failure tracked; a mid-batch failure never aborts the batch. Live progress via an in-process registry + SSE, with a DB snapshot for reconnect.                 | `app/services/bulk_pitch_service.py`, `app/services/batch_registry.py`        |
+| **SQLite write contention**   | WAL journal + `busy_timeout=5000` so concurrent bulk writers don't hit "database is locked".                                                                                                                         | `app/db/session.py`                                                           |
+| **Cost, tracing & metrics**   | Structured JSON log per call (model, cache-hit, tokens, `cost_usd`, latency, grounding_ok, hop); every log line + response carries a request **trace id** (`X-Trace-Id`); Prometheus counters at `GET /api/metrics`. | `app/services/pitch_service.py`, `app/core/tracing.py`, `app/core/metrics.py` |
 
 ### Model choice & pinning
 
@@ -92,6 +92,20 @@ scale, and low latency. Model ids are **pinned** for reproducibility:
 - **Thinking-model note:** Gemini 2.5 are thinking models — thinking tokens count against
   `max_output_tokens`. A tight cap truncates the pitch before it states the offer (fails
   verification), so the chain sets `max_output_tokens=2048` with an explicit `thinking_budget`.
+
+### Observability
+
+- **Trace id** — every request is tagged with a correlation id: a pure-ASGI middleware binds a
+  `ContextVar` and a logging filter stamps it onto **every** JSON log line, so all lines for one
+  generation (cache lookup → each fallback hop → verification → persist → cost) share one id. It's
+  returned as the `X-Trace-Id` response header and shown in the pitch panel's footer; bulk background
+  items get a per-item `batch{id}-{customer}` id. `apps/api/app/core/tracing.py`.
+- **Metrics** — `GET /api/metrics` exposes Prometheus-text counters (generations by outcome, cache
+  hits, regenerations, fallbacks by hop, tokens, cost, HTTP requests) from a small in-process registry
+  — no extra dependency. `apps/api/app/core/metrics.py`.
+
+_A full stack (dashboards, distributed tracing, cost attribution, alerting) remains out of scope; this
+is the dependency-light slice — see below._
 
 ---
 
@@ -172,6 +186,9 @@ Deliberately out of scope (named to show production judgment, not oversight):
 4. **Persistent, shared datastore** — SQLite + seed-on-boot is a demo convenience; production wants a
    managed DB (Cloud SQL / Postgres) with migrations, backups, pooling.
 5. **LLM cost controls** — per-agent budgets, spend caps, and quota alerts, beyond token logging.
+6. **Full observability stack** — a request trace id + Prometheus metrics are built (see above);
+   production still wants dashboards, distributed tracing across services, cost attribution per
+   agent/segment, and alerting on error-rate/latency spikes.
 
 ---
 
