@@ -102,6 +102,13 @@ def test_filter_by_usage_range_composes_with_plan(client, db_session, make_custo
     assert {c["id"] for c in scoped["data"]} == {"CUST-00002"}
 
 
+def test_filter_rejects_out_of_range_params(client):
+    # Pathologically large ints are rejected at the boundary (422) rather than reaching the DB driver.
+    assert client.get("/api/customers", params={"tenure_max": 10**9}).status_code == 422
+    assert client.get("/api/customers", params={"usage_min": 10**12}).status_code == 422
+    assert client.get("/api/customers", params={"tenure_min": -1}).status_code == 422
+
+
 def test_sort_by_tenure_desc(client, db_session, make_customer):
     _seed(
         db_session,

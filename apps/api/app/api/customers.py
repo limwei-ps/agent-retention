@@ -28,10 +28,16 @@ def list_customers(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     expiring: bool = Query(default=False, description="only contracts ending this calendar month"),
-    tenure_min: int | None = Query(default=None, ge=0, description="min tenure in months"),
-    tenure_max: int | None = Query(default=None, ge=0, description="max tenure in months"),
-    usage_min: int | None = Query(default=None, ge=0, description="min avg monthly usage (GB)"),
-    usage_max: int | None = Query(default=None, ge=0, description="max avg monthly usage (GB)"),
+    # Upper bounds keep pathological ints from reaching the DB driver (OverflowError → 500); the
+    # values are generous vs any real tenure (months) / monthly usage (GB).
+    tenure_min: int | None = Query(default=None, ge=0, le=1200, description="min tenure in months"),
+    tenure_max: int | None = Query(default=None, ge=0, le=1200, description="max tenure in months"),
+    usage_min: int | None = Query(
+        default=None, ge=0, le=1_000_000, description="min avg usage (GB)"
+    ),
+    usage_max: int | None = Query(
+        default=None, ge=0, le=1_000_000, description="max avg usage (GB)"
+    ),
     repo: SqlCustomerRepository = Depends(get_customer_repository),
 ) -> Page[CustomerSummary]:
     # "Expiring" reuses the dashboard's calendar-month window so the list matches the tile counts.

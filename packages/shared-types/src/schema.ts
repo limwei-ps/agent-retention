@@ -464,9 +464,9 @@ export interface operations {
                 tenure_min?: number | null;
                 /** @description max tenure in months */
                 tenure_max?: number | null;
-                /** @description min avg monthly usage (GB) */
+                /** @description min avg usage (GB) */
                 usage_min?: number | null;
-                /** @description max avg monthly usage (GB) */
+                /** @description max avg usage (GB) */
                 usage_max?: number | null;
             };
             header?: never;
