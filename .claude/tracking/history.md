@@ -457,6 +457,48 @@ Each built in its own worktree, incrementally committed, verified, merged, and t
 - **Key decision:** Basic Auth (one shared password, browser-native prompt) over a custom login
   page/cookie — auth is out of scope, so a shared gate is enough and far simpler. Cost cap + rate limit
   are in-process (coherent at `max-instances=1`); a wider fleet needs Redis (noted in plan §8).
+
+## 2026-07-20 — Decision: offer ladder stays read-only (not a clickable picker)
+
+- **Context:** Noticed the offer-ladder rungs in the customer detail view aren't clickable; asked
+  whether that's intentional and, per the docs, whether a selectable ladder should be built.
+- **Finding:** The ladder is a **read-only grounding panel** — static `<li>`s in
+  `apps/web/src/app/customers/[id]/page.tsx` (`OfferLadderView`), no click handlers by design. The
+  `recommended` rung is chosen by a deterministic server-side rule (`services/offer_service.py`,
+  spec §1.3) and the full ladder is injected into the pitch prompt for grounding. The interactive
+  surface (generate / bulk / copy / regenerate / streaming / status) lives in `PitchPanel`.
+- **Decision (user-confirmed): keep it read-only — no code change.** The assignment brief never
+  mentions an offer ladder; it's a grounding value-add. Making rungs selectable is gold-plating
+  against the "structure & reliable AI layer over visual polish" boundary and would complicate the
+  graded cache-key + grounding logic (both would have to key on the chosen rung). Stronger
+  walkthrough story: "the recommendation is deterministic and auto-grounds the pitch; the ladder is
+  intentionally informational."
+- **Files:** none (tracking-only entry).
+
+## 2026-07-20 — Public-repo secret-leak review (clean) + de-fingerprint project id
+
+- **Context:** Repo is public (`github.com/limwei-ps/agent-retention`). User asked to review for leaked
+  secrets.
+- **Scan:** current tracked tree **+ all 82 commits of history** (a secret committed once then deleted
+  still lives in public history). Method: direct `git grep`/`git log --diff-filter=A` sweeps for
+  high-signal patterns (Google `AIza`, OpenAI `sk-`, GitHub `ghp_`, AWS `AKIA`, Slack `xox`, JWTs,
+  `BEGIN PRIVATE KEY`, `service_account` JSON) + soft credential-assignment patterns, plus a
+  `security-reviewer` agent pass over deploy/CI/config.
+- **Result — CLEAN, no secrets exposed:** zero key/token/credential hits in any revision; no `.env`
+  ever committed (only `apps/api/.env.example`, placeholders); `APP_PASSWORD` is only ever read from
+  env (`deploy.sh` `:?` guard, `proxy.ts`, compose) — never hardcoded; auth is ADC (no Gemini API key
+  exists to leak); CI uses no `secrets.*`; `.claude/settings.json` has only plugin flags;
+  `proxy.test.ts` uses a dummy `"s3cret"` fixture. No rotation or history rewrite required.
+- **Only exposure = non-secret metadata:** GCP project id `easy-struct` (was the default `PROJECT` in
+  `deploy/deploy.sh`) and the intentionally-public, Basic-Auth-gated live URL.
+- **Hardening applied (user-chosen):** `deploy/deploy.sh` now **requires** `PROJECT` via a `:?` guard
+  (mirrors `APP_PASSWORD`) instead of defaulting to `easy-struct`; usage comment de-fingerprinted.
+  History rewrite deliberately **out of scope** (non-secret ids already public; tracking docs are
+  append-only).
+- **Operational checks flagged to owner (not verifiable from source):** confirm `APP_PASSWORD` is set
+  strong on the live web revision, and the `api` service stays `--no-allow-unauthenticated`.
+- **Files:** `deploy/deploy.sh`; version bump 0.25.4 → 0.25.5 (`apps/web/package.json`,
+  `apps/api/pyproject.toml`, `CLAUDE.md` §8).
 - **Verification:** backend pytest 106; web vitest 34; typecheck/lint clean. Critical teeth step —
   **built the standalone web image and ran it with `APP_PASSWORD` set**: `/` → 401 +
   `WWW-Authenticate`, correct creds → 200, wrong → 401 (confirms middleware reads the *runtime* env in

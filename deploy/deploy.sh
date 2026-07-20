@@ -12,10 +12,10 @@
 #   api runs REAL Gemini via Vertex ADC (the runtime service account), not mock
 #
 # Prereqs: gcloud auth login + application-default login; Docker running.
-# Usage: PROJECT=easy-struct REGION=asia-southeast1 deploy/deploy.sh
+# Usage: PROJECT=your-gcp-project REGION=asia-southeast1 deploy/deploy.sh
 set -euo pipefail
 
-PROJECT="${PROJECT:-easy-struct}"
+PROJECT="${PROJECT:?set PROJECT (your GCP project id)}"
 REGION="${REGION:-asia-southeast1}"
 REPO="${REPO:-retention}"
 TAG="$(git rev-parse --short HEAD 2>/dev/null || echo latest)"
