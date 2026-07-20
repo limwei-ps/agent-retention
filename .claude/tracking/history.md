@@ -547,3 +547,21 @@ Each built in its own worktree, incrementally committed, verified, merged, and t
 - **Debugging note:** most of the time here was leftover-process pollution — a zombie `next dev` from a
   manual debug server held Next's per-dir lock and made the E2E webServer fail to start; killing it
   cleared the false failures. Lesson logged.
+
+## 2026-07-20 — README: replace ASCII architecture with Mermaid diagrams (v0.26.7)
+
+- **What:** replaced the hand-drawn ASCII architecture box in `README.md` with a Mermaid flowchart,
+  and added two more diagrams — the **AI-reliability pitch-generation flow** (grounding → cache key →
+  force/single-flight → generate → fallback chain → output verification → regenerate/persist → cost
+  log) at the top of *The AI reliability layer*, and the **Cloud Run deploy topology** (public `web` →
+  private `api` via Google-signed ID token → Vertex/Gemini, with the Basic-Auth gate, rate limit,
+  scale-to-zero/single-instance, and $20/day cap) at the top of *Deploy*.
+- **Why:** the user asked for a Mermaid chart, then flagged that a single top-level diagram misses the
+  project's real substance — the design choices and trade-offs. The two extra diagrams surface the
+  graded AI layer and the deploy trade-offs visually.
+- **Constraint honoured:** *visualize existing prose only* — every node/edge label traces to text
+  already in the README (Architecture bullets, AI-layer table, Deploy "Deliberate settings"); no new
+  claims introduced.
+- **Files:** `README.md`; version bump `apps/web/package.json` + `apps/api/pyproject.toml` → 0.26.7.
+- **Verification:** all three diagrams passed the Mermaid validator (`valid: true`, flowchart) before
+  and after the edit; docs-only change, no test suites affected.

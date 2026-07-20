@@ -53,11 +53,31 @@ The graded core is a **reliable AI layer**, not visual polish — that's where t
 
 ## Architecture
 
-```
-Browser ──► Next.js (App Router)  ──►  FastAPI (Python)  ──►  SQLite (seed-on-boot)
-            • React Server/Client        • MVC + DTO + DI          • SQLAlchemy, WAL
-            • TanStack Query             • AI reliability layer     • Gemini via Vertex AI (ADC)
-            • BFF route handler ─────────► (server-side; key/URL never reach the browser)
+```mermaid
+flowchart LR
+    subgraph browser["Browser"]
+        UI["React UI<br/>TanStack Query"]
+    end
+    subgraph web["apps/web &mdash; Next.js App Router"]
+        BFF["BFF route handler<br/>api/[...path]/route.ts<br/>server-side proxy, SSE pass-through"]
+    end
+    subgraph api["apps/api &mdash; FastAPI (Python)"]
+        direction TB
+        R["Routers<br/>app/api"]
+        DTO["Pydantic DTOs<br/>app/schemas"]
+        SVC["Services<br/>app/services"]
+        AI["AI reliability layer<br/>app/ai"]
+        REPO["Repositories (DI)<br/>app/repositories"]
+        R --> DTO --> SVC
+        SVC --> AI
+        SVC --> REPO
+    end
+    DB[("SQLite<br/>SQLAlchemy · WAL<br/>seed-on-boot")]
+    GEM[["Gemini via Vertex AI<br/>ADC · streaming"]]
+    UI -->|"same-origin fetch · SSE over POST"| BFF
+    BFF -->|"server-side; key/URL never reach browser"| R
+    REPO --> DB
+    AI --> GEM
 ```
 
 - **Monorepo** — pnpm workspaces for JS (`apps/web`, `packages/shared-types`); `apps/api` is
@@ -77,6 +97,24 @@ Browser ──► Next.js (App Router)  ──►  FastAPI (Python)  ──►  
 ## The AI reliability layer (the graded core)
 
 Every mechanism is hand-rolled so we own and can defend it. All are covered by the pytest suite.
+
+```mermaid
+flowchart TD
+    REQ["Pitch request<br/>(customer id)"] --> GND["Grounding<br/>plan · tenure · usage + offer ladder<br/>cache_key = SHA-256(facts + model id + template version)"]
+    GND --> FORCE{"force?<br/>(regenerate)"}
+    FORCE -->|yes, bypass cache + single-flight| GEN
+    FORCE -->|no| CACHE{"cache hit?"}
+    CACHE -->|hit| REPLAY["Replay cached pitch as stream"]
+    CACHE -->|miss| SF["Single-flight<br/>coalesce identical in-flight<br/>(leader / follower by cache_key)"]
+    SF --> GEN["Generate (streamed)"]
+    GEN --> CHAIN["Fallback chain<br/>gemini-2.5-pro &rarr; 2.5-flash &rarr; last-cached &rarr; clean error"]
+    CHAIN --> VER{"Output verification<br/>plan name + price present?<br/>RM amount in catalog?"}
+    VER -->|fail| REGEN["Regenerate once,<br/>then next fallback hop"]
+    REGEN --> CHAIN
+    VER -->|ok| PERSIST["Persist + cost log<br/>tokens · cost_usd · latency · hop · trace id"]
+    PERSIST --> DONE["Ready pitch &rarr; stream to agent"]
+    REPLAY --> DONE
+```
 
 | Decision                      | How                                                                                                                                                                                                                  | Where                                                                         |
 | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
@@ -149,6 +187,17 @@ To run the **real** LLM locally: `gcloud auth application-default login`, then s
 ---
 
 ## Deploy (GCP Cloud Run)
+
+```mermaid
+flowchart LR
+    USER["Reviewer<br/>(browser)"] -->|"Basic Auth (APP_PASSWORD)<br/>per-IP rate limit (429)"| WEB
+    subgraph cr["GCP Cloud Run &mdash; asia-southeast1"]
+        WEB["web (public)<br/>Next.js + BFF<br/>min-instances=0 · max-instances=1"]
+        API["api (private)<br/>--no-allow-unauthenticated<br/>seed-on-boot SQLite"]
+        WEB -->|"Google-signed ID token<br/>(only web SA has run.invoker)"| API
+    end
+    API -->|"ADC service-account identity<br/>$20/day budget cap"| VERTEX[["Vertex AI &mdash; Gemini"]]
+```
 
 One script, reproducible: [`deploy/deploy.sh`](deploy/deploy.sh) — builds both images, pushes to
 Artifact Registry, grants the runtime service account `roles/aiplatform.user`, and deploys two
