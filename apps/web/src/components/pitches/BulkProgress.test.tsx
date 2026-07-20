@@ -1,10 +1,11 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { describe, expect, it, vi } from "vitest";
 
 import { BulkProgress } from "@/components/pitches/BulkProgress";
 import type { BulkBatchStatus } from "@/types/api";
 
-const STATUS: BulkBatchStatus = {
+const RUNNING: BulkBatchStatus = {
   batch_id: 1,
   total: 3,
   completed: 2,
@@ -22,23 +23,54 @@ const STATUS: BulkBatchStatus = {
 };
 
 describe("BulkProgress", () => {
-  it("renders the X-of-N summary and per-item statuses", () => {
-    render(<BulkProgress status={STATUS} />);
+  it("shows the four status buckets, friendly item labels, and a pitch link for ready items", () => {
+    render(<BulkProgress status={RUNNING} />);
+    const region = screen.getByRole("region", { name: /bulk generation/i });
 
-    expect(screen.getByText(/2 of 3/)).toBeInTheDocument();
-    expect(screen.getByText(/1 ok · 1 failed/)).toBeInTheDocument();
-
-    for (const id of ["CUST-1", "CUST-2", "CUST-3"]) {
-      expect(screen.getByText(id)).toBeInTheDocument();
+    // Bucket labels (StatTiles) + friendly per-item badges.
+    for (const label of ["Queued", "Generating", "Ready", "Failed"]) {
+      expect(within(region).getAllByText(label).length).toBeGreaterThan(0);
     }
-    expect(screen.getByText("succeeded")).toBeInTheDocument();
-    expect(screen.getByText("failed")).toBeInTheDocument();
-    expect(screen.getByText("running")).toBeInTheDocument();
-    expect(screen.getByText("provider down")).toBeInTheDocument();
+    // Raw enum strings must not leak into the UI.
+    expect(within(region).queryByText("succeeded")).not.toBeInTheDocument();
+
+    expect(within(region).getByText("provider down")).toBeInTheDocument();
+    // Ready item links to its pitch.
+    expect(within(region).getByRole("link", { name: /open pitch/i })).toHaveAttribute(
+      "href",
+      "/customers/CUST-1",
+    );
+  });
+
+  it("orders items action-first (failed → running → ready) and shows N / total", () => {
+    render(<BulkProgress status={RUNNING} />);
+    const region = screen.getByRole("region", { name: /bulk generation/i });
+    expect(within(region).getByText("2 / 3")).toBeInTheDocument();
+
+    const ids = within(region)
+      .getAllByText(/^CUST-\d$/)
+      .map((el) => el.textContent);
+    expect(ids).toEqual(["CUST-2", "CUST-3", "CUST-1"]); // failed, running, ready
   });
 
   it("reflects progress in the progressbar aria value", () => {
-    render(<BulkProgress status={STATUS} />);
+    render(<BulkProgress status={RUNNING} />);
     expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "67");
+  });
+
+  it("offers Retry failed when the batch is complete with failures", async () => {
+    const onRetryFailed = vi.fn();
+    const done: BulkBatchStatus = {
+      ...RUNNING,
+      completed: 3,
+      running: 0,
+      complete: true,
+      items: RUNNING.items.map((i) => (i.status === "running" ? { ...i, status: "succeeded" } : i)),
+    };
+    render(<BulkProgress status={done} onRetryFailed={onRetryFailed} />);
+
+    expect(screen.getByText("Done")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: /retry 1 failed/i }));
+    expect(onRetryFailed).toHaveBeenCalledOnce();
   });
 });

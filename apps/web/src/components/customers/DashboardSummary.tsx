@@ -1,8 +1,8 @@
 "use client";
 
 import { Spinner } from "@/components/ui/Spinner";
+import { StatTile } from "@/components/ui/StatTile";
 import { useDashboard } from "@/hooks/useDashboard";
-import { cn } from "@/lib/cn";
 import { useFilters } from "@/providers/FiltersProvider";
 
 export function DashboardSummary() {
@@ -49,43 +49,5 @@ export function DashboardSummary() {
         ))}
       </div>
     </section>
-  );
-}
-
-function StatTile({
-  label,
-  value,
-  hero,
-  active,
-  onClick,
-}: {
-  label: string;
-  value: number;
-  hero?: boolean;
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={cn(
-        "focus-visible:ring-fibre min-w-28 flex-1 rounded-xl border px-4 py-3 text-left transition focus-visible:ring-2 focus-visible:outline-none",
-        active
-          ? "border-fibre bg-fibre/8 ring-fibre/40 ring-1"
-          : "border-line bg-surface hover:border-fibre/50",
-      )}
-    >
-      <div
-        className={cn("font-display text-ink tnum font-semibold", hero ? "text-3xl" : "text-2xl")}
-      >
-        {value}
-      </div>
-      <div className={cn("mt-1 h-0.5 w-6 rounded", active || hero ? "bg-fibre" : "bg-line")} />
-      <div className="text-ink-soft mt-2 truncate font-mono text-[11px] tracking-wide uppercase">
-        {label}
-      </div>
-    </button>
   );
 }

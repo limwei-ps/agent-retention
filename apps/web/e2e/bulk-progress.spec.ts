@@ -11,8 +11,9 @@ test("runs a bulk batch to completion with per-item status", async ({ page }) =>
   await expect(bulk).toBeEnabled();
   await bulk.click();
 
-  // Progress reaches "N of N · done"; at least one item badge shows succeeded.
-  await expect(page.getByText(/Bulk generation —/)).toBeVisible();
-  await expect(page.getByText(/· done/)).toBeVisible({ timeout: 30_000 });
-  await expect(page.getByText("succeeded").first()).toBeVisible();
+  // The bulk panel appears, reaches "Done", and shows at least one Ready item.
+  const panel = page.getByRole("region", { name: /bulk generation progress/i });
+  await expect(panel).toBeVisible();
+  await expect(panel.getByText("Done")).toBeVisible({ timeout: 30_000 });
+  await expect(panel.getByText("Ready").first()).toBeVisible();
 });

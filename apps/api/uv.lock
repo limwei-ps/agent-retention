@@ -1008,7 +1008,7 @@ wheels = [
 
 [[package]]
 name = "retention-api"
-version = "0.25.6"
+version = "0.26.0"
 source = { editable = "." }
 dependencies = [
     { name = "faker" },

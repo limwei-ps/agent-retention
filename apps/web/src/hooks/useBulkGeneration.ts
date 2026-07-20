@@ -31,6 +31,7 @@ export function useBulkGeneration() {
   const qc = useQueryClient();
   const [batchId, setBatchId] = useState<number | null>(null);
   const [starting, setStarting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const query = useQuery({
     queryKey: ["bulk", batchId],
@@ -43,10 +44,13 @@ export function useBulkGeneration() {
     async (customerIds: string[], force = false) => {
       if (customerIds.length === 0) return;
       setStarting(true);
+      setError(null);
       try {
         const { batch_id } = await startBulk({ customer_ids: customerIds, force });
         setBatchId(batch_id);
         void consumeStream(batch_id, qc);
+      } catch {
+        setError("Couldn't start the batch. Check your connection and try again.");
       } finally {
         setStarting(false);
       }
@@ -54,5 +58,5 @@ export function useBulkGeneration() {
     [qc],
   );
 
-  return { start, starting, status: query.data };
+  return { start, starting, status: query.data, error };
 }
