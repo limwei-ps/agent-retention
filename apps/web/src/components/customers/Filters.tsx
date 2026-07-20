@@ -24,7 +24,7 @@ export function Filters() {
   }, [term, setSearch]);
 
   const fieldClass =
-    "rounded border border-gray-300 bg-white px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-800";
+    "rounded-md border border-line bg-surface px-2.5 py-1.5 text-sm text-ink placeholder:text-ink-soft/70 focus:border-fibre focus:outline-none focus:ring-2 focus:ring-fibre/30";
 
   return (
     <div className="flex flex-wrap items-center gap-2">

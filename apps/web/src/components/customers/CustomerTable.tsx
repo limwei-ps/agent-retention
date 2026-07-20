@@ -24,32 +24,35 @@ export function CustomerTable() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-2 py-8 text-sm text-gray-500">
-        <Spinner /> Loading customers…
+      <div className="text-ink-soft flex items-center gap-2 py-8 text-sm">
+        <Spinner className="text-fibre" /> Loading customers…
       </div>
     );
   }
   if (isError || !data) {
-    return <p className="py-8 text-sm text-red-600">Could not load customers.</p>;
+    return <p className="text-danger-deep py-8 text-sm">Could not load customers.</p>;
   }
 
   const totalPages = Math.max(1, Math.ceil(data.total / pageSize));
+  const th = "px-3 py-2.5 font-medium";
+  const td = "px-3 py-2.5";
+  const dataCell = `${td} font-mono text-[13px] text-ink tnum`;
 
   return (
     <div className={isFetching ? "opacity-60 transition-opacity" : undefined}>
-      <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+      <div className="border-line bg-surface overflow-x-auto rounded-xl border">
         <table className="w-full text-left text-sm">
-          <thead className="bg-gray-50 text-xs text-gray-500 uppercase dark:bg-gray-800">
+          <thead className="border-line text-ink-soft border-b font-mono text-[11px] tracking-wide uppercase">
             <tr>
-              <th className="px-3 py-2 font-medium">Customer</th>
-              <th className="px-3 py-2 font-medium">Plan</th>
-              <th className="px-3 py-2 font-medium">Tenure</th>
-              <th className="px-3 py-2 font-medium">Avg usage</th>
-              <th className="px-3 py-2 font-medium">Expires</th>
-              <th className="px-3 py-2 font-medium">Pitch</th>
+              <th className={th}>Customer</th>
+              <th className={th}>Plan</th>
+              <th className={th}>Tenure</th>
+              <th className={th}>Avg usage</th>
+              <th className={th}>Expires</th>
+              <th className={th}>Pitch</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+          <tbody className="divide-line divide-y">
             {data.data.map((c) => {
               const isSelected = c.id === selectedId;
               return (
@@ -67,26 +70,25 @@ export function CustomerTable() {
                     }
                   }}
                   className={cn(
-                    "cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50",
-                    isSelected &&
-                      "bg-blue-50 ring-1 ring-blue-400 ring-inset dark:bg-blue-950 dark:ring-blue-600",
+                    "hover:bg-paper cursor-pointer transition-colors",
+                    isSelected && "bg-fibre/8 ring-fibre/40 ring-1 ring-inset",
                   )}
                 >
-                  <td className="px-3 py-2">
+                  <td className={td}>
                     <Link
                       href={`/customers/${c.id}`}
                       onClick={(e) => e.stopPropagation()}
-                      className="font-medium text-blue-600 hover:underline dark:text-blue-400"
+                      className="text-fibre-deep font-medium hover:underline"
                     >
                       {c.name}
                     </Link>
-                    <div className="text-xs text-gray-400">{c.id}</div>
+                    <div className="text-ink-soft font-mono text-[11px]">{c.id}</div>
                   </td>
-                  <td className="px-3 py-2">{c.current_plan.name}</td>
-                  <td className="px-3 py-2 tabular-nums">{c.tenure_months} mo</td>
-                  <td className="px-3 py-2 tabular-nums">{formatGb(c.avg_monthly_gb)}</td>
-                  <td className="px-3 py-2 tabular-nums">{formatDate(c.contract_end_date)}</td>
-                  <td className="px-3 py-2">
+                  <td className={`${td} text-ink`}>{c.current_plan.name}</td>
+                  <td className={dataCell}>{c.tenure_months} mo</td>
+                  <td className={dataCell}>{formatGb(c.avg_monthly_gb)}</td>
+                  <td className={dataCell}>{formatDate(c.contract_end_date)}</td>
+                  <td className={td}>
                     <div className="flex items-center justify-between gap-2">
                       <PitchStatusBadge status={c.latest_pitch_status} />
                       {isSelected && (
@@ -96,7 +98,7 @@ export function CustomerTable() {
                             e.stopPropagation();
                             open(c.id);
                           }}
-                          className="text-xs font-medium text-blue-600 hover:underline dark:text-blue-400"
+                          className="text-fibre-deep text-xs font-medium hover:underline"
                         >
                           Open →
                         </button>
@@ -108,7 +110,7 @@ export function CustomerTable() {
             })}
             {data.data.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-3 py-8 text-center text-gray-500">
+                <td colSpan={6} className="text-ink-soft px-3 py-10 text-center">
                   No customers match these filters.
                 </td>
               </tr>
@@ -117,8 +119,8 @@ export function CustomerTable() {
         </table>
       </div>
 
-      <div className="mt-3 flex items-center justify-between text-sm text-gray-500">
-        <span className="tabular-nums">
+      <div className="text-ink-soft mt-3 flex items-center justify-between text-sm">
+        <span className="tnum font-mono text-[13px]">
           {data.total} customers · page {page} of {totalPages}
         </span>
         <div className="flex gap-2">
