@@ -297,7 +297,7 @@ State these explicitly in the README. Naming them shows production judgment; the
 "I know what I skipped and why," not "I didn't think of it."
 
 - **Auth & access control.** A lightweight **shared-password HTTP Basic Auth gate**
-  (`apps/web/src/middleware.ts`) protects the public demo URL; it assumes an authenticated retention
+  (`apps/web/src/proxy.ts`) protects the public demo URL; it assumes an authenticated retention
   agent behind SSO in production, which still needs real per-user authn/authz, audit trails, and role
   scoping. The gate password is a deploy-time env var (Secret Manager deferred).
 - **PII handling & data governance.** Fake data sidesteps it. Real telco customer data going to a

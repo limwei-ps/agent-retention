@@ -89,7 +89,7 @@ are relative to the repo root. This mirrors the PDF's own section order.
 
 - [x] **Rate limiting & concurrency — batching and backpressure** _(layered)_
   - Bulk fan-out: `apps/api/app/services/bulk_pitch_service.py` (`asyncio.Semaphore`) + `apps/api/app/core/config.py` (`bulk_concurrency=4`) — bounded so bulk never overwhelms the LLM API.
-  - Request layer: `apps/web/src/middleware.ts` — per-IP fixed-window rate limit on `/api/*` (`RATE_LIMIT_PER_MIN`, default 60) → 429, so a single client can't hammer the backend/LLM.
+  - Request layer: `apps/web/src/proxy.ts` — per-IP fixed-window rate limit on `/api/*` (`RATE_LIMIT_PER_MIN`, default 60) → 429, so a single client can't hammer the backend/LLM.
   - Cost ceiling: `apps/api/app/core/budget.py` — hard `$20/day` spend cap refuses fresh generations when the daily budget is spent.
   - `apps/api/app/db/session.py` — SQLite WAL + `busy_timeout=5000` to survive concurrent bulk writers.
 

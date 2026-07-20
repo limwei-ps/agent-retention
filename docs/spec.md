@@ -167,7 +167,7 @@ Gemini model id in config + README.
 (`LLM_DAILY_BUDGET_USD`, in-process `DailyBudget`, `app/core/budget.py`) refuses a fresh generation
 once the day's estimated cost is reached — cache hits + last-cached fallbacks stay free; state in
 `GET /api/health`. At the edge, the `web` service adds an HTTP **Basic-Auth gate** + a **per-IP
-request rate limit** (`apps/web/src/middleware.ts`, `RATE_LIMIT_PER_MIN`) so the shared public URL
+request rate limit** (`apps/web/src/proxy.ts`, `RATE_LIMIT_PER_MIN`) so the shared public URL
 isn't open to anonymous, unbounded billable calls. Both are demo-scope (single-instance, env-var
 secret); production wants per-agent budgets + SSO + Secret Manager.
 

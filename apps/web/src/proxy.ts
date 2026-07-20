@@ -64,7 +64,7 @@ export function __resetRateLimit(): void {
   hits.clear();
 }
 
-export function middleware(req: NextRequest): NextResponse {
+export function proxy(req: NextRequest): NextResponse {
   const password = process.env.APP_PASSWORD;
   if (!password) return NextResponse.next(); // gate disabled (local dev / CI / e2e)
 

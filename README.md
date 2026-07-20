@@ -182,7 +182,7 @@ Deliberate settings (and why):
 
 **Auth:** this is an internal tool for an **authenticated retention agent behind SSO** — real
 per-user auth is out of scope. The public demo adds only a **lightweight shared-password gate** (HTTP
-Basic Auth in `apps/web/src/middleware.ts`) so the link can be shared without leaving billable Gemini
+Basic Auth in `apps/web/src/proxy.ts`) so the link can be shared without leaving billable Gemini
 wide open; production would replace it with SSO + per-user authz and audit trails.
 
 Deliberately out of scope (named to show production judgment, not oversight):
