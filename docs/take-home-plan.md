@@ -354,8 +354,11 @@ State these explicitly in the README. Naming them shows production judgment; the
   trade-off, since tightening it re-introduces false positives on legitimate prose ("Our Fibre
   network"). A trailing speed unit is folded away so `TIME Fibre 300Mbps` ≡ `TIME Fibre 300` (v0.25.5,
   fixing a real regenerate→fallback loop); the top tier written as "1000Mbps" still won't match
-  "1Gbps" (rare, degrades to a harmless regenerate). Production would use a model-graded or
-  catalog-derived NER check rather than a regex.
+  "1Gbps" (rare, degrades to a harmless regenerate). The amount check likewise allows the grounded
+  current↔rung **deltas** (stated savings / upsell premium) as of v0.26.3; **term totals** (price ×
+  months, e.g. "RM 2640 over 24 months") aren't in the allow-set — a rare residual that self-heals via
+  the single regenerate. Production would use a model-graded or catalog-derived NER check rather than a
+  regex.
 - **Filter range validation.** `tenure_min/max` + `usage_min/max` are bounded (`ge`/`le`) but an
   inverted range (`min > max`) isn't rejected — it just returns an empty page. The UI's fixed buckets
   can't produce it; an ad-hoc API caller could. Production would add cross-field validation returning a

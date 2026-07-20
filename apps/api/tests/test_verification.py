@@ -29,6 +29,22 @@ def test_invented_amount_fails() -> None:
     assert 5 in result.invented_amounts
 
 
+def test_savings_delta_amount_passes() -> None:
+    # Models state the monthly saving ("saving RM 19" = current 129 − retain 110), a grounded
+    # difference that isn't a listed price. It must be allowed (was an intermittent false positive
+    # → extra regenerate). Retain ladder: current 129, retain "TIME Fibre 300" @ 110, delta 19.
+    text = "Recontract TIME Fibre 300 at RM 110/month — saving RM 19 a month — for 24 months."
+    result = verify_grounding(text, RETAIN_LADDER, current_price=129)
+    assert result.ok, result
+
+
+def test_upsell_premium_delta_amount_passes() -> None:
+    # The upsell premium ("+RM 30" = 159 − 129) is likewise a grounded delta, not an invented price.
+    text = "Step up to TIME Fibre 500 at RM 159/month, just +RM 30 more than your RM 129 today."
+    result = verify_grounding(text, LADDER, current_price=129)
+    assert result.ok, result
+
+
 def test_invented_plan_fails() -> None:
     result = verify_grounding(
         "Upgrade to TIME Fibre 9000 at RM 159/month.", LADDER, current_price=129

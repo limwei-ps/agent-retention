@@ -133,7 +133,9 @@ stream: replay the stored text as a stream for consistent UX.
 
 ### 4.4 Output grounding verification
 After generation, assert every RM amount in the output ∈ the allow-list (customer's current price ∪
-catalog prices ∪ offer-ladder rung prices) and that the recommended plan name + price are present. The
+catalog prices ∪ offer-ladder rung prices ∪ the current↔rung **deltas**, so a stated saving
+"RM 19" or upsell premium "+RM 30" is grounded arithmetic, not an invented price) and that the
+recommended plan name + price are present. The
 plan-name check targets **numeric plan identifiers** — `<brand> Fibre/Fiber <digit…>` (all catalog
 names are digit-suffixed, e.g. `TIME Fibre 100` … `TIME Fibre 1Gbps`) — so it flags misspellings and
 numeric fabrications (`TIME Fiber 300`, `TIME Fibre 9000`, `MaxSpeed Fibre 900`) without false-flagging

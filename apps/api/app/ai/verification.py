@@ -42,8 +42,15 @@ class VerificationResult:
 
 def verify_grounding(text: str, ladder: OfferLadder, current_price: int) -> VerificationResult:
     catalog_names = {_normalize_plan(p.name) for p in CATALOG}
+    # Allowed RM amounts: the customer's current price, catalog list prices, each rung's price, and
+    # the grounded *delta* between current and each rung — models routinely state the monthly saving
+    # ("saving RM 19") or the upsell premium ("+RM 30"), which are exact arithmetic on allowed values,
+    # not invented prices. A truly fabricated amount (e.g. RM 250) is still not a delta → still caught.
     allowed_amounts = (
-        {current_price} | {p.price_myr for p in CATALOG} | {r.monthly_price for r in ladder.rungs}
+        {current_price}
+        | {p.price_myr for p in CATALOG}
+        | {r.monthly_price for r in ladder.rungs}
+        | {abs(current_price - r.monthly_price) for r in ladder.rungs}
     )
 
     found_amounts = {int(m) for m in _AMOUNT_RE.findall(text)}
