@@ -132,6 +132,36 @@ async def test_all_hops_fail_no_cache_yields_error(db_session, make_customer):
     assert _pitch_count(db_session) == 0
 
 
+async def test_falls_back_to_last_cached_when_all_hops_fail(db_session, make_customer):
+    # pro→flash→cached: every live hop fails but a prior ready pitch exists → serve it, flagged stale.
+    customer, ladder = _customer(db_session, make_customer)
+    await _run(_service(db_session, _chain(("primary", MockLLM()))), customer, ladder)  # seed cache
+    assert _pitch_count(db_session) == 1
+
+    # force bypasses the normal cache-read so we exercise the fallback chain, not a plain cache hit.
+    failing = _service(db_session, _chain(("primary", MockLLM(fail=True))))
+    events = await _run(failing, customer, ladder, force=True)
+
+    assert any(e.event == "fallback" and e.data.get("hop") == "cached" for e in events)
+    done = next(e for e in events if e.event == "done")
+    assert done.data["stale"] is True
+    assert done.data["cache_hit"] is True
+    assert _pitch_count(db_session) == 1  # a stale serve writes no new row
+
+
+async def test_generate_reports_stale_outcome(db_session, make_customer):
+    # Bulk path (generate) must surface the degraded last-cached fallback via outcome.stale.
+    customer, ladder = _customer(db_session, make_customer)
+    await _service(db_session, _chain(("primary", MockLLM()))).generate(customer, ladder)
+
+    failing = _service(db_session, _chain(("primary", MockLLM(fail=True))))
+    outcome = await failing.generate(customer, ladder, force=True)
+
+    assert outcome.ok is True
+    assert outcome.stale is True
+    assert _pitch_count(db_session) == 1
+
+
 async def test_single_flight_coalesces_concurrent_requests(db_session, make_customer):
     customer, ladder = _customer(db_session, make_customer)
     client = CountingLLM(delay_s=0.01)
