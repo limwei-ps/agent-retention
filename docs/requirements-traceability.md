@@ -48,8 +48,8 @@ are relative to the repo root. This mirrors the PDF's own section order.
   - `apps/web/src/components/customers/DashboardSummary.tsx` + `apps/web/src/hooks/useDashboard.ts`; backend `apps/api/app/api/dashboard.py` (`GET /dashboard/summary`) — hero total + one stat tile per plan tier.
 
 - [x] **Filter and sort the customer list by plan, tenure, or usage**
-  - `apps/web/src/components/customers/Filters.tsx` + `apps/web/src/providers/FiltersProvider.tsx` — plan + search are server-side filters; tenure / usage / expiry are sort keys with an asc/desc toggle.
-  - _Nuance:_ tenure and usage are exposed as **sort** options (not discrete filter controls); the true list filters are **plan** and **search**.
+  - Filter: `apps/web/src/components/customers/Filters.tsx` + `apps/web/src/providers/FiltersProvider.tsx` — **plan**, **tenure**, and **usage** are all filters (tenure/usage via bucket dropdowns that map to `tenure_min/max` + `usage_min/max` range params), plus free-text **search**. Backend range filtering in `apps/api/app/repositories/customer_repository.py` (`.list()`), params on `GET /customers` (`apps/api/app/api/customers.py`).
+  - Sort: the same three dimensions (tenure / usage / expiry) are also sort keys with an asc/desc toggle.
 
 - [x] **Detail view showing customer info and the generated pitch side by side**
   - `apps/web/src/app/customers/[id]/page.tsx` — `md:grid-cols-5` split: info/usage panel beside `apps/web/src/components/pitches/PitchPanel.tsx`.

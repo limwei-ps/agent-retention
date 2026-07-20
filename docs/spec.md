@@ -96,7 +96,7 @@ All responses are Pydantic DTOs. Envelope for lists: `{ data, page, page_size, t
 
 | method + path | purpose | params / body |
 |---------------|---------|---------------|
-| `GET /api/customers` | list | `search` (name/id), `plan`, `sort` (tenure\|avg_gb\|contract_end_date), `order`, `page`, `page_size` |
+| `GET /api/customers` | list | `search` (name/id), `plan`, `tenure_min`/`tenure_max` (months, `le=1200`), `usage_min`/`usage_max` (avg GB, `le=1_000_000`), `expiring` (bool), `sort` (tenure\|avg_gb\|contract_end_date), `order`, `page`, `page_size` |
 | `GET /api/customers/{id}` | detail | → customer + usage_history + offer ladder + latest pitch |
 | `GET /api/dashboard/summary` | dashboard | → count expiring **this month** grouped by plan tier |
 | `POST /api/customers/{id}/pitch` | generate (foreground stream) | body `{ force?: bool }`; **SSE** token stream, generated in-request; `force` = cache bypass |
@@ -132,10 +132,18 @@ invalidates. **Regenerate** sends `force: true` → bypasses read, writes a fres
 stream: replay the stored text as a stream for consistent UX.
 
 ### 4.4 Output grounding verification
-After generation, assert every plan name and price/number in the output ∈ the offer ladder / catalog
-(regex + numeric extraction). On failure: mark `grounding_ok=false` and **auto-regenerate once**; if
-it fails again, surface a clear error rather than a hallucinated pitch. This turns "prompted
-carefully" into a reliability guarantee.
+After generation, assert every RM amount in the output ∈ the allow-list (customer's current price ∪
+catalog prices ∪ offer-ladder rung prices) and that the recommended plan name + price are present. The
+plan-name check targets **numeric plan identifiers** — `<brand> Fibre/Fiber <digit…>` (all catalog
+names are digit-suffixed, e.g. `TIME Fibre 100` … `TIME Fibre 1Gbps`) — so it flags misspellings and
+numeric fabrications (`TIME Fiber 300`, `TIME Fibre 9000`, `MaxSpeed Fibre 900`) without false-flagging
+ordinary prose ("TIME Fibre plans", "Our Fibre network"). On failure: mark `grounding_ok=false` and
+**auto-regenerate once**; if it fails again, advance the fallback chain rather than serve a hallucinated
+pitch. This turns "prompted carefully" into a reliability guarantee.
+
+_Accepted residual gap:_ a fabricated brand with a **non-numeric** suffix ("MaxSpeed Fibre Ultra")
+isn't caught by the plan-name regex — but a fabricated **price** still is, and the model is instructed
+to quote only listed plans. See `docs/take-home-plan.md` §8.
 
 ### 4.5 Concurrency / backpressure
 Bulk generation runs under an **asyncio semaphore** (concurrency cap, config constant). **Single-

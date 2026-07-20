@@ -340,7 +340,19 @@ State these explicitly in the README. Naming them shows production judgment; the
   blocking), but production would use an async driver / threadpool + short-lived sessions.
 - **Scale & resilience.** Retry policies with jitter, circuit breakers on the LLM provider,
   multi-region, and load testing the bulk path.
-- **CI/CD.** Automated tests + deploy pipeline on push; here it's manual.
+- **CI/CD.** GitHub Actions runs backend/frontend/e2e + a coverage gate on push/PR
+  (`.github/workflows/ci.yml`); **deploy** is still manual. Two follow-ups deferred: SHA-pinning the
+  third-party actions (`astral-sh/setup-uv`, `pnpm/action-setup` — currently on major-version tags;
+  the GitHub API wasn't reachable during the change to resolve exact SHAs) and auto-deploy on green.
+- **Grounding-verification residual gap.** Output verification catches invented **prices** (amount
+  allow-list) and **numeric** plan identifiers (`<brand> Fibre <digit…>`), but a fabricated brand with
+  a *non-numeric* suffix ("MaxSpeed Fibre Ultra") isn't flagged by the plan-name regex — an accepted
+  trade-off, since tightening it re-introduces false positives on legitimate prose ("Our Fibre
+  network"). Production would use a model-graded or catalog-derived NER check rather than a regex.
+- **Filter range validation.** `tenure_min/max` + `usage_min/max` are bounded (`ge`/`le`) but an
+  inverted range (`min > max`) isn't rejected — it just returns an empty page. The UI's fixed buckets
+  can't produce it; an ad-hoc API caller could. Production would add cross-field validation returning a
+  400 with a clear message.
 
 ---
 

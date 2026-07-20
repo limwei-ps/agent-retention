@@ -33,8 +33,8 @@ The graded core is a **reliable AI layer**, not visual polish — that's where t
 ## What's built
 
 - **Dashboard + list** (`/`): summary of customers expiring this month by plan tier; a customer table
-  with search (name / id), plan filter, sort (tenure / usage / expiry), and pagination. A
-  bulk-generate action runs pitches for the current page.
+  with search (name / id), filters for plan, tenure, and usage (range buckets), sort (tenure / usage /
+  expiry), and pagination. A bulk-generate action runs pitches for the current page.
 - **Detail** (`/customers/[id]`): customer info + usage history side-by-side with a pitch panel that
   **streams token-by-token**, shows a status state machine (`not_generated` → `generating` → `ready` /
   `failed`), and offers **copy** + **regenerate** (force refresh).
