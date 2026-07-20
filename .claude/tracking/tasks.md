@@ -81,16 +81,16 @@ Master task list. Mark done with `[x]` and a date; add new tasks in place. Synce
   fetch+ReadableStream, not EventSource; teeth step verified streaming/bulk through the live BFF
   (Playwright browser MCP unavailable → HTTP-level verification). Playwright E2E deferred to Day 5.
 
-## Day 5 — Tests, Docker, Deploy, README
+## Day 5 — Tests, Docker, Deploy, README  (done 2026-07-20)
 
-- [ ] Tests: AI layer mocked (cache hit, fallback, partial batch failure, single-flight) + key UI + streaming E2E
-- [ ] Dockerfile(s) + docker-compose
-- [ ] **Actually deploy** to GCP Cloud Run (mock-LLM default); secrets via Secret Manager; test deploy path early
-- [ ] Model choice + version pinning (config constant + README line)
-- [ ] Finalize README: architecture, tradeoffs, run/deploy notes, injection acknowledgement, auth assumption, curated out-of-scope items
-- [ ] Screen recording / GIF of the streaming pitch
-- [ ] Final self code-review pass
-- [ ] Commit: tests, docker, deploy config, README
+- [x] Tests: AI layer mocked (cache hit, fallback, partial batch failure, single-flight) + key UI + streaming E2E — 2026-07-20: AI/UI tests already existed (82 pytest + 12 vitest); added Playwright streaming + bulk E2E (v0.17.4). Also fixed the orphaned SSE_TOKEN_CHUNK_DELAY_MS.
+- [x] Dockerfile(s) + docker-compose — 2026-07-20 (v0.17.5): Next standalone + $PORT + ignore files; verified via `docker compose up --build`.
+- [x] **Actually deploy** to GCP Cloud Run — 2026-07-20: live at https://retention-web-6xowpmfgjq-as.a.run.app. Deviates from the "mock default / Secret Manager" plan per user: **real Gemini** via Vertex ADC (runtime SA), min=0/max=1, no API key. Deploy scripted in deploy/deploy.sh (v0.18.0).
+- [x] Model choice + version pinning (config constant + README line) — 2026-07-20 (README §Model choice; config + ai/pricing.py).
+- [x] Finalize README: architecture, tradeoffs, run/deploy, injection acknowledgement, auth assumption, curated out-of-scope — 2026-07-20 (v0.18.1).
+- [ ] Screen recording / GIF of the streaming pitch — deferred: cannot screen-record from here; README has a ready-to-uncomment embed for `docs/streaming-demo.gif` (manual step).
+- [x] Final self code-review pass — 2026-07-20 (code-reviewer agent over the Day 4–5 diff).
+- [x] Commit: tests, docker, deploy config, README — 2026-07-20: v0.17.4 → v0.18.x, incremental.
 
 ## Gap traceability (folded into Days above)
 

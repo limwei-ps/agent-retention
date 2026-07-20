@@ -19,6 +19,11 @@ function forwardRequestHeaders(source: Headers): Headers {
 }
 
 async function proxy(req: NextRequest, segments: string[]): Promise<Response> {
+  // Never let a segment escape the /api/ prefix on the backend host.
+  if (segments.some((s) => s === "." || s === "..")) {
+    return new Response("Not found", { status: 404 });
+  }
+
   const target = `${API_BASE_URL}/api/${segments.join("/")}${req.nextUrl.search}`;
   const hasBody = req.method !== "GET" && req.method !== "HEAD";
 
@@ -27,6 +32,9 @@ async function proxy(req: NextRequest, segments: string[]): Promise<Response> {
     headers: forwardRequestHeaders(req.headers),
     body: hasBody ? await req.text() : undefined,
     redirect: "manual",
+    // Propagate client aborts (tab close / navigate away) so the upstream generation is cancelled
+    // instead of streaming — and billing — into the void, and its concurrency slot is released.
+    signal: req.signal,
   });
 
   const headers = new Headers();

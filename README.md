@@ -19,7 +19,7 @@ The graded core is a **reliable AI layer**, not visual polish — that's where t
 
 ## Live demo
 
-**<!-- LIVE_URL -->** _(deployed to GCP Cloud Run)_
+**https://retention-web-6xowpmfgjq-as.a.run.app** _(deployed to GCP Cloud Run, `asia-southeast1`)_
 
 - **First request may cold-start** — the service scales to zero (`min-instances=0`), so the first hit
   after idle takes a few seconds to spin up.

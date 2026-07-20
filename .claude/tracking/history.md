@@ -322,3 +322,35 @@ key decisions.
   this session, so the visual watch was done at the HTTP-streaming level, not a rendered browser.
 - **Verification:** web typecheck + eslint + prettier clean; 12 Vitest tests pass; hooks green on every
   commit. Playwright streaming E2E deferred to Day 5 per the day plan.
+
+## 2026-07-20 — Day 5: tests, Docker, live Cloud Run deploy, README
+
+- **What:** Closed the take-home in a `day5-deploy` worktree; 6 commits (v0.17.4 → v0.18.2). Most
+  Day-5 tests already existed (82 pytest + 12 vitest); the new work was the E2E, Cloud Run readiness,
+  the live deploy, and the README.
+- **v0.17.4** Playwright streaming + bulk E2E (next dev + mock uvicorn, headless) — asserts
+  generating→ready + grounded text + copy/regenerate, and bulk to N-of-N. Also fixed the **orphaned
+  `SSE_TOKEN_CHUNK_DELAY_MS`** (defined but never wired → mock never paced its stream); now
+  `MockLLM(delay_s=...)`.
+- **v0.17.5** Cloud Run readiness: switched web to **Next standalone** output (the prior `pnpm start`
+  runner corepack-pulled pnpm 11 / Node 22 and crashed on Node 20); `$PORT` in both Dockerfiles;
+  `apps/web/public/.gitkeep` (build COPY needed it); web/root `.dockerignore` + `.gcloudignore`.
+  Verified via `docker compose up --build`.
+- **v0.18.0** `deploy/deploy.sh` — reproducible two-service deploy.
+- **v0.18.1** root README (injection acknowledgement + AI disclosure opener, architecture, every
+  reliability decision, model pinning, run/deploy, auth assumption, curated out-of-scope).
+- **Live deploy (user override of the mock-default plan):** real Gemini via Vertex ADC (runtime SA
+  granted `roles/aiplatform.user`), `--min-instances=0 --max-instances=1`, default CPU-throttling.
+  Live at https://retention-web-6xowpmfgjq-as.a.run.app. Smoke test: web 200, health `gemini`, a real
+  pitch streamed grounded (it even exercised verify→regenerate live on an out-of-catalog first draft),
+  `grounding_ok=true`, ~$0.002/pitch.
+- **v0.18.2** code-review fixes + live URL + tracking. code-reviewer findings: [HIGH] BFF fetch didn't
+  propagate `req.signal` (aborted streams kept generating/billing) → added `signal: req.signal`;
+  [MED] bulk button re-clickable mid-batch → disabled while `!status.complete`; [LOW] added `..`
+  path-segment guard in the proxy. [CRITICAL] flagged: the public `api` service runs real Gemini
+  unauthenticated (anyone with the URL can bill Gemini / hit bulk) — a documented, user-accepted
+  tradeoff (max=1 bounds blast radius); raised to the user with an offer to lock api to
+  service-to-service auth. Deferred [LOW] Dockerfile `|| install` fallback (lockfile in sync).
+- **GIF:** cannot screen-record here; README has a ready-to-uncomment embed for `docs/streaming-demo.gif`.
+- **Verification:** api 82 pytest, web 12 vitest, 2 Playwright E2E, compose build+run, live smoke —
+  all pass; typecheck/lint/prettier/ruff/mypy clean; hooks green on every commit.

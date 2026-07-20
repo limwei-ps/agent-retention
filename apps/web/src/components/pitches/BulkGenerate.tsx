@@ -15,11 +15,15 @@ export function BulkGenerate() {
 
   const ids = data?.data.map((c) => c.id) ?? [];
 
+  // A batch is in flight until the status snapshot reports complete — keep the button disabled the
+  // whole time so a second click can't launch an overlapping batch for the same customers.
+  const running = Boolean(status && !status.complete);
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-3">
-        <Button onClick={() => start(ids)} disabled={starting || ids.length === 0}>
-          {starting ? "Starting…" : `Generate pitches for these ${ids.length}`}
+        <Button onClick={() => start(ids)} disabled={starting || running || ids.length === 0}>
+          {starting || running ? "Generating…" : `Generate pitches for these ${ids.length}`}
         </Button>
         <span className="text-xs text-gray-400">Runs on the current page (bulk max 200).</span>
       </div>
