@@ -37,6 +37,10 @@ class CustomerRepository(Protocol):
         page_size: int,
         expiring_from: date | None = None,
         expiring_to: date | None = None,
+        tenure_min: int | None = None,
+        tenure_max: int | None = None,
+        usage_min: int | None = None,
+        usage_max: int | None = None,
     ) -> tuple[list[Customer], int]: ...
 
     def get(self, customer_id: str) -> Customer | None: ...
@@ -59,6 +63,10 @@ class SqlCustomerRepository:
         page_size: int,
         expiring_from: date | None = None,
         expiring_to: date | None = None,
+        tenure_min: int | None = None,
+        tenure_max: int | None = None,
+        usage_min: int | None = None,
+        usage_max: int | None = None,
     ) -> tuple[list[Customer], int]:
         stmt = select(Customer)
         if search:
@@ -71,6 +79,15 @@ class SqlCustomerRepository:
                 Customer.contract_end_date >= expiring_from,
                 Customer.contract_end_date <= expiring_to,
             )
+        # Tenure / usage range filters (usage = the derived avg_monthly_gb scalar, indexed for this).
+        if tenure_min is not None:
+            stmt = stmt.where(Customer.tenure_months >= tenure_min)
+        if tenure_max is not None:
+            stmt = stmt.where(Customer.tenure_months <= tenure_max)
+        if usage_min is not None:
+            stmt = stmt.where(Customer.avg_monthly_gb >= usage_min)
+        if usage_max is not None:
+            stmt = stmt.where(Customer.avg_monthly_gb <= usage_max)
 
         # Count over the filtered predicate only (before options/order/paging).
         total = self._db.scalar(select(func.count()).select_from(stmt.subquery())) or 0

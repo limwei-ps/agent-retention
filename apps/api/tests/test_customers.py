@@ -62,6 +62,46 @@ def test_filter_by_plan(client, db_session, make_customer):
     assert resp["data"][0]["current_plan"]["name"] == "TIME Fibre 500"
 
 
+def test_filter_by_tenure_range(client, db_session, make_customer):
+    _seed(
+        db_session,
+        make_customer,
+        [
+            {"id": "CUST-00001", "tenure_months": 6},
+            {"id": "CUST-00002", "tenure_months": 24},
+            {"id": "CUST-00003", "tenure_months": 48},
+        ],
+    )
+    # 13–36 window keeps only the mid customer.
+    resp = client.get("/api/customers", params={"tenure_min": 13, "tenure_max": 36}).json()
+    assert {c["id"] for c in resp["data"]} == {"CUST-00002"}
+
+    # Open-ended max: 37+.
+    resp = client.get("/api/customers", params={"tenure_min": 37}).json()
+    assert {c["id"] for c in resp["data"]} == {"CUST-00003"}
+
+
+def test_filter_by_usage_range_composes_with_plan(client, db_session, make_customer):
+    _seed(
+        db_session,
+        make_customer,
+        [
+            {"id": "CUST-00001", "plan": "fibre_100", "avg_gb": 120},
+            {"id": "CUST-00002", "plan": "fibre_100", "avg_gb": 350},
+            {"id": "CUST-00003", "plan": "fibre_500", "avg_gb": 350},
+        ],
+    )
+    # 200–499 GB window.
+    resp = client.get("/api/customers", params={"usage_min": 200, "usage_max": 499}).json()
+    assert {c["id"] for c in resp["data"]} == {"CUST-00002", "CUST-00003"}
+
+    # Composes with the plan filter.
+    scoped = client.get(
+        "/api/customers", params={"usage_min": 200, "usage_max": 499, "plan": "fibre_100"}
+    ).json()
+    assert {c["id"] for c in scoped["data"]} == {"CUST-00002"}
+
+
 def test_sort_by_tenure_desc(client, db_session, make_customer):
     _seed(
         db_session,

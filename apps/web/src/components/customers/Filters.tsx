@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { useDashboard } from "@/hooks/useDashboard";
-import { useFilters } from "@/providers/FiltersProvider";
+import { TENURE_BUCKETS, USAGE_BUCKETS, useFilters } from "@/providers/FiltersProvider";
 
 const SORTS: { value: "contract_end_date" | "tenure" | "avg_gb"; label: string }[] = [
   { value: "contract_end_date", label: "Expiry date" },
@@ -19,11 +19,15 @@ export function Filters() {
     sort,
     order,
     expiring,
+    tenureBucket,
+    usageBucket,
     setSearch,
     setPlan,
     setSort,
     toggleOrder,
     setExpiring,
+    setTenure,
+    setUsage,
   } = useFilters();
   const { data: dashboard } = useDashboard();
 
@@ -57,6 +61,30 @@ export function Filters() {
         {dashboard?.by_tier.map((tier) => (
           <option key={tier.plan.id} value={tier.plan.id}>
             {tier.plan.name}
+          </option>
+        ))}
+      </select>
+      <select
+        value={tenureBucket}
+        onChange={(e) => setTenure(e.target.value)}
+        aria-label="Filter by tenure"
+        className={fieldClass}
+      >
+        {TENURE_BUCKETS.map((b) => (
+          <option key={b.value} value={b.value}>
+            {b.label}
+          </option>
+        ))}
+      </select>
+      <select
+        value={usageBucket}
+        onChange={(e) => setUsage(e.target.value)}
+        aria-label="Filter by usage"
+        className={fieldClass}
+      >
+        {USAGE_BUCKETS.map((b) => (
+          <option key={b.value} value={b.value}>
+            {b.label}
           </option>
         ))}
       </select>

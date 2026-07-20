@@ -7,6 +7,24 @@ import type { CustomerQuery } from "@/lib/api";
 type SortKey = NonNullable<CustomerQuery["sort"]>;
 type Order = NonNullable<CustomerQuery["order"]>;
 
+// Bucket dropdowns map to the backend's numeric min/max range params. "" = any.
+type Range = { min?: number; max?: number };
+export const TENURE_BUCKETS: { value: string; label: string; range: Range }[] = [
+  { value: "", label: "Any tenure", range: {} },
+  { value: "0-12", label: "0–12 mo", range: { min: 0, max: 12 } },
+  { value: "13-36", label: "13–36 mo", range: { min: 13, max: 36 } },
+  { value: "37+", label: "37+ mo", range: { min: 37 } },
+];
+export const USAGE_BUCKETS: { value: string; label: string; range: Range }[] = [
+  { value: "", label: "Any usage", range: {} },
+  { value: "0-199", label: "<200 GB", range: { min: 0, max: 199 } },
+  { value: "200-499", label: "200–499 GB", range: { min: 200, max: 499 } },
+  { value: "500+", label: "500+ GB", range: { min: 500 } },
+];
+
+const rangeOf = (buckets: { value: string; range: Range }[], value: string): Range =>
+  buckets.find((b) => b.value === value)?.range ?? {};
+
 interface FiltersState {
   search: string;
   plan: string; // "" = all plans
@@ -15,6 +33,8 @@ interface FiltersState {
   page: number;
   pageSize: number;
   expiring: boolean; // only contracts ending this calendar month
+  tenureBucket: string; // "" = any
+  usageBucket: string; // "" = any
 }
 
 const DEFAULTS: FiltersState = {
@@ -25,6 +45,8 @@ const DEFAULTS: FiltersState = {
   page: 1,
   pageSize: 10,
   expiring: false,
+  tenureBucket: "",
+  usageBucket: "",
 };
 
 interface FiltersContextValue extends FiltersState {
@@ -35,6 +57,8 @@ interface FiltersContextValue extends FiltersState {
   toggleOrder: () => void;
   setPage: (v: number) => void;
   setExpiring: (v: boolean) => void;
+  setTenure: (v: string) => void;
+  setUsage: (v: string) => void;
   /** Dashboard-tile shortcut: filter to a plan (or "" for all) expiring this month. */
   focusExpiring: (plan: string) => void;
 }
@@ -61,6 +85,12 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
     if (state.search.trim()) query.search = state.search.trim();
     if (state.plan) query.plan = state.plan;
     if (state.expiring) query.expiring = true;
+    const tenure = rangeOf(TENURE_BUCKETS, state.tenureBucket);
+    if (tenure.min !== undefined) query.tenure_min = tenure.min;
+    if (tenure.max !== undefined) query.tenure_max = tenure.max;
+    const usage = rangeOf(USAGE_BUCKETS, state.usageBucket);
+    if (usage.min !== undefined) query.usage_min = usage.min;
+    if (usage.max !== undefined) query.usage_max = usage.max;
     return {
       ...state,
       query,
@@ -70,6 +100,8 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
       toggleOrder: () => patch({ order: state.order === "asc" ? "desc" : "asc" }),
       setPage: (v) => patch({ page: v }, false),
       setExpiring: (v) => patch({ expiring: v }),
+      setTenure: (v) => patch({ tenureBucket: v }),
+      setUsage: (v) => patch({ usageBucket: v }),
       focusExpiring: (plan) => patch({ plan, expiring: true }),
     };
   }, [state, patch]);

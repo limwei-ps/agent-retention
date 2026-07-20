@@ -24,6 +24,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Metrics */
+        get: operations["metrics_api_metrics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/customers": {
         parameters: {
             query?: never;
@@ -410,6 +427,26 @@ export interface operations {
             };
         };
     };
+    metrics_api_metrics_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
     list_customers_api_customers_get: {
         parameters: {
             query?: {
@@ -423,6 +460,14 @@ export interface operations {
                 page_size?: number;
                 /** @description only contracts ending this calendar month */
                 expiring?: boolean;
+                /** @description min tenure in months */
+                tenure_min?: number | null;
+                /** @description max tenure in months */
+                tenure_max?: number | null;
+                /** @description min avg monthly usage (GB) */
+                usage_min?: number | null;
+                /** @description max avg monthly usage (GB) */
+                usage_max?: number | null;
             };
             header?: never;
             path?: never;

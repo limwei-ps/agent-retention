@@ -28,6 +28,10 @@ def list_customers(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     expiring: bool = Query(default=False, description="only contracts ending this calendar month"),
+    tenure_min: int | None = Query(default=None, ge=0, description="min tenure in months"),
+    tenure_max: int | None = Query(default=None, ge=0, description="max tenure in months"),
+    usage_min: int | None = Query(default=None, ge=0, description="min avg monthly usage (GB)"),
+    usage_max: int | None = Query(default=None, ge=0, description="max avg monthly usage (GB)"),
     repo: SqlCustomerRepository = Depends(get_customer_repository),
 ) -> Page[CustomerSummary]:
     # "Expiring" reuses the dashboard's calendar-month window so the list matches the tile counts.
@@ -43,6 +47,10 @@ def list_customers(
         page_size=page_size,
         expiring_from=expiring_from,
         expiring_to=expiring_to,
+        tenure_min=tenure_min,
+        tenure_max=tenure_max,
+        usage_min=usage_min,
+        usage_max=usage_max,
     )
     return Page(
         data=[to_summary(c) for c in rows],
