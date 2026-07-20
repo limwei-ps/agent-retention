@@ -19,6 +19,12 @@ PROJECT="${PROJECT:-easy-struct}"
 REGION="${REGION:-asia-southeast1}"
 REPO="${REPO:-retention}"
 TAG="$(git rev-parse --short HEAD 2>/dev/null || echo latest)"
+
+# Public-demo gate + cost cap (see README §Deploy). APP_PASSWORD is the shared Basic-Auth secret —
+# required, never committed, and must not contain a comma (gcloud --set-env-vars delimiter).
+APP_PASSWORD="${APP_PASSWORD:?set APP_PASSWORD (shared demo gate password; no commas)}"
+RATE_LIMIT_PER_MIN="${RATE_LIMIT_PER_MIN:-60}"
+LLM_DAILY_BUDGET_USD="${LLM_DAILY_BUDGET_USD:-20}"
 AR_HOST="${REGION}-docker.pkg.dev"
 IMAGE_BASE="${AR_HOST}/${PROJECT}/${REPO}"
 RUNTIME_SA="$(gcloud projects describe "${PROJECT}" --format='value(projectNumber)')-compute@developer.gserviceaccount.com"
@@ -51,7 +57,7 @@ echo "==> Deploying api (real Gemini, min=0/max=1, PRIVATE — no public invoker
 gcloud run deploy retention-api \
   --project "${PROJECT}" --region "${REGION}" --image "${IMAGE_BASE}/api:${TAG}" \
   --no-allow-unauthenticated --min-instances=0 --max-instances=1 --timeout=300 \
-  --set-env-vars "LLM_MODE=gemini,GOOGLE_CLOUD_PROJECT=${PROJECT},GOOGLE_CLOUD_LOCATION=global"
+  --set-env-vars "LLM_MODE=gemini,GOOGLE_CLOUD_PROJECT=${PROJECT},GOOGLE_CLOUD_LOCATION=global,LLM_DAILY_BUDGET_USD=${LLM_DAILY_BUDGET_USD}"
 
 API_URL="$(gcloud run services describe retention-api --project "${PROJECT}" --region "${REGION}" --format='value(status.url)')"
 echo "==> api URL: ${API_URL}"
@@ -65,7 +71,7 @@ echo "==> Deploying web (public BFF → private api via ID token)"
 gcloud run deploy retention-web \
   --project "${PROJECT}" --region "${REGION}" --image "${IMAGE_BASE}/web:${TAG}" \
   --allow-unauthenticated --min-instances=0 --max-instances=1 --timeout=300 \
-  --set-env-vars "API_BASE_URL=${API_URL},UPSTREAM_AUTH=gcp-id-token"
+  --set-env-vars "API_BASE_URL=${API_URL},UPSTREAM_AUTH=gcp-id-token,APP_PASSWORD=${APP_PASSWORD},RATE_LIMIT_PER_MIN=${RATE_LIMIT_PER_MIN}"
 
 WEB_URL="$(gcloud run services describe retention-web --project "${PROJECT}" --region "${REGION}" --format='value(status.url)')"
 echo ""
