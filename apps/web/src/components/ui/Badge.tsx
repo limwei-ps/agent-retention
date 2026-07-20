@@ -2,14 +2,15 @@ import { type ReactNode } from "react";
 
 import { cn } from "@/lib/cn";
 
+// Tone names kept stable (consumers pass gray/blue/green/amber/red); mapped to the fibre palette.
 export type BadgeTone = "gray" | "blue" | "green" | "amber" | "red";
 
 const TONES: Record<BadgeTone, string> = {
-  gray: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200",
-  blue: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-  green: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-  amber: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
-  red: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+  gray: "bg-line text-ink-soft",
+  blue: "bg-fibre/12 text-fibre-deep",
+  green: "bg-ok/12 text-ok-deep",
+  amber: "bg-signal/15 text-signal-deep",
+  red: "bg-danger/12 text-danger-deep",
 };
 
 export function Badge({ tone = "gray", children }: { tone?: BadgeTone; children: ReactNode }) {

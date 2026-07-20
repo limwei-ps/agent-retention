@@ -1,26 +1,101 @@
 @import "tailwindcss";
 
+/* "Fibre signal" design tokens — a cool, instrument-precise console. Light-first; dark via
+   prefers-color-scheme (the raw vars flip, the @theme mappings below reference them live). */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --paper: #f5f7fa;
+  --surface: #ffffff;
+  --ink: #101828;
+  --ink-soft: #475467;
+  --line: #e4e8ee;
+  --fibre: #0fb5ae; /* the signature accent — light through glass */
+  --fibre-deep: #0e7c86; /* AA text/hover on light */
+  --signal: #f0a035; /* expiry urgency */
+  --signal-deep: #b45309;
+  --ok: #12a150;
+  --ok-deep: #0f7a43;
+  --danger: #dc2626;
+  --danger-deep: #b42318;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --paper: #0b1220;
+    --surface: #121a2a;
+    --ink: #e6eaf0;
+    --ink-soft: #93a0b4;
+    --line: #1e2a3d;
+    --fibre: #2dd4bf;
+    --fibre-deep: #5eead4;
+    --signal: #f0a035;
+    --signal-deep: #fbbf6b;
+    --ok: #34d399;
+    --ok-deep: #6ee7b7;
+    --danger: #f87171;
+    --danger-deep: #fca5a5;
   }
 }
 
+@theme inline {
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-line: var(--line);
+  --color-fibre: var(--fibre);
+  --color-fibre-deep: var(--fibre-deep);
+  --color-signal: var(--signal);
+  --color-signal-deep: var(--signal-deep);
+  --color-ok: var(--ok);
+  --color-ok-deep: var(--ok-deep);
+  --color-danger: var(--danger);
+  --color-danger-deep: var(--danger-deep);
+
+  --font-sans: var(--font-plex-sans);
+  --font-display: var(--font-space-grotesk);
+  --font-mono: var(--font-plex-mono);
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-plex-sans), system-ui, sans-serif;
+}
+
+/* Tabular figures for data columns (IDs, GB, RM, tokens). */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Signature: a luminous rule of light "travelling" down the fibre while a pitch streams. */
+@keyframes fibre-travel {
+  0% {
+    background-position: -140% 0;
+  }
+  100% {
+    background-position: 240% 0;
+  }
+}
+.fibre-rule {
+  height: 2px;
+  border-radius: 2px;
+  background:
+    linear-gradient(90deg, transparent, var(--fibre), transparent) no-repeat,
+    color-mix(in srgb, var(--fibre) 22%, transparent);
+  background-size:
+    45% 100%,
+    100% 100%;
+  animation: fibre-travel 1.5s linear infinite;
+}
+.fibre-rule-idle {
+  height: 2px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--fibre) 45%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fibre-rule {
+    animation: none;
+    background: color-mix(in srgb, var(--fibre) 55%, transparent);
+  }
 }
