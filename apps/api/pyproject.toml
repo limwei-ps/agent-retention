@@ -1,6 +1,6 @@
 [project]
 name = "retention-api"
-version = "0.26.1"
+version = "0.26.2"
 description = "Time Internet retention tool — FastAPI backend + AI pitch layer"
 requires-python = ">=3.12"
 dependencies = [

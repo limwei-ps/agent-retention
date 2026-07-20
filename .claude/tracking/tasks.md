@@ -131,4 +131,12 @@ All six gaps identified vs. the assignment brief are now closed.
   - [x] Web HTTP Basic Auth gate + per-IP rate limit (`middleware.ts`; 401 / 429) — v0.25.0
   - [x] Deploy env (`APP_PASSWORD`, `RATE_LIMIT_PER_MIN`, `LLM_DAILY_BUDGET_USD`) — v0.25.1
   - [x] Docs + tracking — v0.25.2–0.25.3
-  - [ ] Redeploy with the gate/cap env (needs the shared `APP_PASSWORD` from the user)
+  - [x] Redeploy with the gate/cap env — 2026-07-20 (v0.25.4; IAP disabled so Basic Auth is the gate)
+- [x] Rename middleware.ts → proxy.ts (Next 16 convention) — v0.25.4
+- [x] Push `main` to GitHub (github.com/limwei-ps/agent-retention) — 2026-07-20
+- [x] Fix single-pitch regenerate loop (verification speed-unit false positive) — v0.25.6:
+      root-caused via Cloud logs + captured SSE ("TIME Fibre 300Mbps" ≠ catalog "TIME Fibre 300");
+      fold the speed unit before the catalog match, +2 tests
+- [x] Redesign bulk generation UI (Fibre-Signal transmission panel: fibre rail, four StatTiles,
+      action-first list w/ pitch links, retry-failed) — v0.26.0; shared `ui/StatTile.tsx` extracted
+- [x] Docs + tracking for the fix + redesign — v0.26.1–0.26.2; tag v0.26.0; redeploy

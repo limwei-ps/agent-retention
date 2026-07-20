@@ -503,3 +503,26 @@ Each built in its own worktree, incrementally committed, verified, merged, and t
   **built the standalone web image and ran it with `APP_PASSWORD` set**: `/` → 401 +
   `WWW-Authenticate`, correct creds → 200, wrong → 401 (confirms middleware reads the *runtime* env in
   the production build, not a build-time inline). Redeploy with the new env pending the user's password.
+
+## 2026-07-20 — Fix regenerate loop (verification) + bulk-UI redesign
+
+- **The bug (v0.25.6, fix):** single-pitch **Regenerate** looped "out-of-catalog plan → regenerate →
+  fallback". Root cause found via Cloud logs (`gcloud logging read` showed `fallback_hop=secondary`)
+  + a captured live SSE stream: gemini-2.5-pro writes the plan with its speed unit —
+  **"TIME Fibre 300Mbps"** — but the catalog name is "TIME Fibre 300", so the plan check false-flagged
+  a fully-grounded pitch (force always generates fresh → hit every time). The user reported it as an
+  "amount" issue; the real reason string was "out-of-catalog plan". Fix: fold a trailing `Mbps`/`Gbps`
+  out of plan mentions before the catalog match (`_normalize_plan`); wrong numbers / misspelt brands
+  still fail. +2 tests. Residuals (non-numeric brand; 1000Mbps≠1Gbps) noted in plan §8.
+  _(Renumbered v0.25.5 → v0.25.6 after main took v0.25.5 for the deploy de-fingerprint above.)_
+- **Bulk-UI redesign (v0.26.0, feat):** reworked the flat bulk bar into a "transmission" panel in the
+  Fibre-Signal language — signature animated fibre rail, a four-channel StatTile readout
+  (Queued/Generating/Ready/Failed, surfacing the unused running/pending counts), action-first item
+  list (failures first, friendly labels, Ready→pitch link), Retry-failed, Live/Reconnected/Done badge,
+  kickoff-error surfacing. Extracted a shared `ui/StatTile.tsx` (reused in DashboardSummary).
+- **v0.26.1 docs / v0.26.2 tracking.**
+- **Process:** followed systematic-debugging (root cause before fix) + frontend-design (redesign);
+  worktree; incremental commits v0.25.6 → v0.26.2; rebuilt onto main after it diverged (b6dacae);
+  merged; tagged v0.26.0; one redeploy (PROJECT now required explicitly).
+- **Verification:** backend pytest 108 (incl. 2 new speed-unit tests); web vitest 36 (rewritten
+  BulkProgress test); typecheck + lint clean; Playwright E2E 2 passed (bulk panel + streaming).

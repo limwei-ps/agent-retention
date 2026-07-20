@@ -102,3 +102,20 @@ user correction, add a rule that prevents the same mistake.
   active only when `APP_PASSWORD` is set); `app/core/budget.py` = `$20/day` spend cap. Verified the gate
   reads the **runtime** env in the production standalone build (a real risk — Next can inline
   `process.env` at build time) by curling the built server with `APP_PASSWORD` set before deploying.
+
+## 2026-07-20 — Debug from real evidence, not the reported symptom; heuristic guards over-fire on real LLM output
+
+- **Pattern:** The user reported the single-pitch regenerate "keeps getting out of catalog **amount**
+  then fallback." Guessing at amounts would have been wrong: pulling **Cloud logs** (showed
+  `fallback_hop=secondary` = primary failed verification) and capturing the **live SSE stream** showed
+  the real trigger — the model wrote "TIME Fibre 300**Mbps**" and the reason was "out-of-catalog
+  **plan**", not amount. The regex flagged a fully-grounded plan because the catalog name omits the
+  speed unit the model naturally appends. (Same failure class as the earlier prose false-positive.)
+- **Rule:** Debug from primary evidence (logs + a captured reproduction), not the user's paraphrase of
+  the symptom — the reported field ("amount") was wrong. And a heuristic guard (regex/keyword) validated
+  only against the deterministic mock will over-fire on real model phrasing (speed units, paraphrases,
+  spacing); test it against realistic LLM output and normalize benign variation rather than force
+  regenerate/fallback. The mock LLM structurally can't surface these — only real-provider output does.
+- **How to apply:** `verification._normalize_plan` folds a trailing Mbps/Gbps before the catalog match;
+  root-caused with `gcloud logging read` + a curl of the live SSE `/pitch` stream (force=true) before
+  writing the fix; failing test first.
