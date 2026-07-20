@@ -14,7 +14,11 @@ from app.core.catalog import CATALOG
 from app.schemas.offer import OfferLadder
 
 _AMOUNT_RE = re.compile(r"RM\s?(\d+)")
-_PLAN_RE = re.compile(r"TIME Fibre \S+")
+# Any "<Capitalized brand> Fibre/Fiber <token>" phrase — catches fabricated brands
+# ("MaxSpeed Fibre Ultra") and misspellings ("TIME Fiber 300"), not just the real "TIME Fibre"
+# prefix. Case-sensitive on capital-F so generic lowercase prose ("a Malaysian fibre provider",
+# straight from the system prompt) is not mistaken for a plan mention.
+_PLAN_RE = re.compile(r"\b[A-Z][A-Za-z0-9]+ Fib(?:re|er) \S+")
 
 
 @dataclass(frozen=True)

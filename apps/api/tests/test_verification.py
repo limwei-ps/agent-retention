@@ -36,3 +36,30 @@ def test_missing_recommended_offer_fails() -> None:
     result = verify_grounding("Thanks for being a loyal TIME Fibre 500 customer!", LADDER, 129)
     assert not result.ok
     assert result.reason == "recommended offer not stated"
+
+
+def test_invented_brand_name_fails() -> None:
+    # Recommended plan + a valid RM amount are present, but a fabricated brand must still be caught.
+    text = "Upgrade to TIME Fibre 500 at RM 159/month — or try our MaxSpeed Fibre Ultra deal!"
+    result = verify_grounding(text, LADDER, current_price=129)
+    assert not result.ok
+    assert result.reason == "out-of-catalog plan"
+    assert "MaxSpeed Fibre Ultra" in result.invented_plans
+
+
+def test_misspelled_plan_fails() -> None:
+    result = verify_grounding(
+        "Upgrade to TIME Fiber 300 at RM 159/month.", LADDER, current_price=129
+    )
+    assert not result.ok
+    assert "TIME Fiber 300" in result.invented_plans
+
+
+def test_lowercase_fibre_prose_passes() -> None:
+    # Generic lowercase "fibre" (as in the system prompt's "Malaysian fibre provider") is prose, not
+    # a plan mention — it must not be flagged as an invented plan (no false positive).
+    text = (
+        "As your Malaysian fibre provider, upgrade to TIME Fibre 500 at RM 159/month for 24 months."
+    )
+    result = verify_grounding(text, LADDER, current_price=129)
+    assert result.ok
