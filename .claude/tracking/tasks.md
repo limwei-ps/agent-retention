@@ -113,4 +113,16 @@ All six gaps identified vs. the assignment brief are now closed.
       filter, active highlight, clear chip) — v0.21.0–0.21.1
 - [x] Observability: request trace id (X-Trace-Id, per-item bulk ids, on every log line + pitch
       footer) + Prometheus metrics at `GET /api/metrics` — v0.22.0–0.22.3
+- [x] Requirements-traceability doc (assignment → files checklist) — v0.21.2
+- [x] Test hardening + tenure/usage filters — v0.22.5–0.23.0: stale-cache fallback test, verification
+      regex broaden, BFF proxy test, coverage tooling + GitHub Actions CI, and tenure/usage **range
+      filters** (closes "filter by plan, tenure, or usage" — previously sort-only)
+- [x] Three-agent review pass (security / code / simplifier) + approved fixes — v0.23.1–0.23.5:
+  - [x] A+B verification regex false-positive on grounded prose (re-anchored to numeric plan ids) + tests
+  - [x] C FiltersProvider bucket→range + page-reset tests
+  - [x] D `le=` bounds on tenure/usage params (422 not 500)
+  - [x] E+F CI `permissions: contents: read` + `--cov-fail-under=85`
+  - [x] Docs + tracking updated (spec §3/§4.4, traceability, plan §8, README)
+  - Deferred (accepted, plan §8): non-numeric fabricated-brand verification gap; `min>max` not rejected;
+    CI SHA-pin + auto-deploy
 - [ ] Redeploy latest to Cloud Run (live URL still on v0.20.3)

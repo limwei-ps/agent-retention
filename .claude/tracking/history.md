@@ -381,3 +381,50 @@ Each built in its own worktree, incrementally committed, verified, merged, and t
   README documents both. +7 pytest (tracing + metrics). Backend teeth confirmed one trace id ties a
   request's access + generation logs and the metrics counters increment.
 - **Not yet redeployed:** the live URL still serves v0.20.3; these later changes await the next deploy.
+
+## 2026-07-20 — Test hardening + tenure/usage filters (v0.22.5–v0.23.0)
+
+- **What:** A review-driven test-and-feature pass (built in a worktree, rebuilt onto `main` as a
+  monotonic v0.22.5→v0.23.0 sequence after the observability branch landed concurrently).
+  - `v0.22.5` test: cover the **stale last-cached fallback** path (pro→flash→cached serves a prior
+    ready pitch flagged `stale`) — previously the one uncovered fallback branch.
+  - `v0.22.6` fix: broaden output-verification `_PLAN_RE` to catch fabricated brands + misspellings.
+  - `v0.22.7` test: cover the **BFF proxy** route handler (forwarding, SSE headers, POST body,
+    path-traversal 404, abort propagation).
+  - `v0.22.8` chore: coverage tooling (`pytest-cov`, `@vitest/coverage-v8`) + `.github/workflows/ci.yml`
+    (backend / frontend / e2e jobs).
+  - `v0.23.0` feat: **tenure + usage list filters** — backend `tenure_min/max` + `usage_min/max` range
+    params on the repo + `GET /customers`; frontend bucket dropdowns mapping to those params. This
+    closes the assignment's "filter by plan, tenure, or usage" (previously tenure/usage were sort-only).
+- **Why:** Close the test-strategy gaps found in an earlier review and fully satisfy the filter
+  requirement. Files: `verification.py`, `customer_repository.py`, `api/customers.py`,
+  `providers/FiltersProvider.tsx`, `components/customers/Filters.tsx`, `lib/api.ts` + tests.
+- **Verification:** backend pytest 97, frontend vitest 23, typecheck/lint clean; filters verified
+  end-to-end on seeded data (60 → 30 usage≥500 / 25 tenure≥37 / 13 both); Playwright E2E 2 passed.
+
+## 2026-07-20 — Three-agent review pass + fixes (v0.23.1–v0.23.5)
+
+- **What:** Ran security-reviewer, code-reviewer, and code-simplifier over the v0.22.5–v0.23.0 diff,
+  surfaced findings for the user, then fixed the approved set incrementally.
+- **Findings (headline):** two reviewers independently flagged the `_PLAN_RE` regex from **opposite
+  directions** — code-reviewer [HIGH] false positives (it flagged legitimate capitalized prose like
+  "TIME Fibre plans" / "Our Fibre network", failing fully-grounded pitches); security-reviewer [MED]
+  false negatives (digit/lowercase-prefixed fabrications slipped through). Also: [MED] no frontend
+  tests for bucket→range mapping; [LOW] no upper bound on filter params (OverflowError→500 risk);
+  [LOW] CI missing `permissions:` + mutable action tags + no coverage gate. Simplifier: ship-ready.
+- **Fixes:**
+  - `v0.23.1` fix: re-anchor `_PLAN_RE` to numeric plan ids (`Fib(?:re|er) \d\S*`) — prose passes,
+    numeric fabrications/misspellings caught; +capitalized-prose regression test +catalog-guard test.
+  - `v0.23.2` test: `FiltersProvider` bucket→range mapping + page-reset tests.
+  - `v0.23.3` fix: `le=` bounds on tenure/usage params (422 instead of driver OverflowError).
+  - `v0.23.4` ci: `permissions: contents: read` + `--cov-fail-under=85`.
+  - `v0.23.5` docs: traceability caveat corrected, spec §3/§4.4 updated, plan §8 limitations, README.
+- **Deferred (accepted, logged in plan §8):** verification doesn't catch a *non-numeric*-suffix
+  fabricated brand ("MaxSpeed Fibre Ultra") — tightening re-introduces false positives; `min>max`
+  filter ranges aren't rejected (UI can't produce them); CI SHA-pinning (GitHub API unreachable here
+  to resolve tags) + auto-deploy.
+- **Verification:** backend pytest 100 pass (coverage 92%, gate 85%); frontend vitest green;
+  regex teeth-check confirmed prose passes and `TIME Fibre 9000`/`TIME Fiber 300`/`MaxSpeed Fibre 900`
+  are caught.
+- **Commits:** `v0.23.1`–`v0.23.6` (this tracking entry). Built in the `review-fixes` worktree, merged
+  to `main`.

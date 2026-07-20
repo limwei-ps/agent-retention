@@ -66,3 +66,21 @@ user correction, add a rule that prevents the same mistake.
   tick/append `tasks.md` in the same wrap-up.
 - **How to apply:** Backfilled the post-Day-5 entries in `history.md` + `tasks.md`; going forward,
   include a tracking-update step in each feature's plan/verification checklist.
+
+## 2026-07-20 — Tightening a guard needs tests in BOTH directions
+
+- **Pattern:** To fix a false-negative in output verification I broadened the `_PLAN_RE` regex and
+  added tests proving fabricated plans were now caught — but only tested the "bad input is caught"
+  direction. The broadened regex silently began flagging legitimate grounded prose ("TIME Fibre plans",
+  "Our Fibre network") as invented plans, failing fully-correct pitches on the **graded** path. Two
+  review agents caught it from opposite sides (one saw remaining false-negatives, one the new
+  false-positives) — a strong signal a heuristic guard is mis-tuned.
+- **Rule:** When changing a guard/validator/filter, add a "legitimate input still passes" test right
+  next to the "bad input is caught" test. A guard that **over-fires** on the happy path is usually
+  worse than the gap it closed, especially on a graded/critical path. A heuristic (regex, keyword list)
+  trades false-negatives for false-positives — decide which way to err, test that boundary, and add a
+  coupling guard (e.g. every catalog name must still pass) so future data changes fail loudly.
+- **How to apply:** Re-anchored `_PLAN_RE` to numeric plan ids (`Fib(?:re|er) \d\S*`); added
+  `test_capitalized_fibre_prose_passes` (happy-path guard) + `test_all_catalog_names_not_flagged`
+  (coupling guard); documented the accepted residual gap in `docs/take-home-plan.md` §8 instead of
+  over-tightening.
