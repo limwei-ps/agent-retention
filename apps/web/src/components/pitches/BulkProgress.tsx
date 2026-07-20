@@ -14,35 +14,35 @@ export function BulkProgress({ status }: { status: BulkBatchStatus }) {
   const pct = status.total > 0 ? Math.round((status.completed / status.total) * 100) : 0;
 
   return (
-    <section className="rounded-lg border border-gray-200 p-4 dark:border-gray-700">
-      <div className="mb-1 flex items-center justify-between text-sm">
-        <span className="font-medium">
+    <section className="border-line bg-surface rounded-xl border p-4">
+      <div className="mb-2 flex items-center justify-between text-sm">
+        <span className="text-ink font-medium">
           Bulk generation — {status.completed} of {status.total}
           {status.complete ? " · done" : "…"}
         </span>
-        <span className="text-xs text-gray-500 tabular-nums">
+        <span className="text-ink-soft tnum font-mono text-[11px]">
           {status.succeeded} ok · {status.failed} failed
           {!status.live && " · (reconnected)"}
         </span>
       </div>
 
       <div
-        className="h-2 w-full overflow-hidden rounded bg-gray-100 dark:bg-gray-800"
+        className="bg-line h-1.5 w-full overflow-hidden rounded-full"
         role="progressbar"
         aria-valuenow={pct}
         aria-valuemin={0}
         aria-valuemax={100}
       >
-        <div className="h-full bg-blue-500 transition-all" style={{ width: `${pct}%` }} />
+        <div className="bg-fibre h-full rounded-full transition-all" style={{ width: `${pct}%` }} />
       </div>
 
       <ul className="mt-3 flex max-h-48 flex-col gap-1 overflow-y-auto text-xs">
         {status.items.map((item) => (
           <li key={item.customer_id} className="flex items-center justify-between gap-2">
-            <span className="font-mono text-gray-500">{item.customer_id}</span>
+            <span className="text-ink-soft font-mono">{item.customer_id}</span>
             <span className="flex items-center gap-2">
               {item.error && (
-                <span className="max-w-40 truncate text-red-500" title={item.error}>
+                <span className="text-danger-deep max-w-40 truncate" title={item.error}>
                   {item.error}
                 </span>
               )}
