@@ -14,11 +14,14 @@ from app.core.catalog import CATALOG
 from app.schemas.offer import OfferLadder
 
 _AMOUNT_RE = re.compile(r"RM\s?(\d+)")
-# Any "<Capitalized brand> Fibre/Fiber <token>" phrase — catches fabricated brands
-# ("MaxSpeed Fibre Ultra") and misspellings ("TIME Fiber 300"), not just the real "TIME Fibre"
-# prefix. Case-sensitive on capital-F so generic lowercase prose ("a Malaysian fibre provider",
-# straight from the system prompt) is not mistaken for a plan mention.
-_PLAN_RE = re.compile(r"\b[A-Z][A-Za-z0-9]+ Fib(?:re|er) \S+")
+# Plan-name check targets numeric plan identifiers: "<brand> Fibre/Fiber <digit…>". Requiring a
+# digit-led token after "Fibre" gates real plan mentions (every catalog name is digit-suffixed —
+# "TIME Fibre 100" … "TIME Fibre 1Gbps") and catches misspellings/fabrications that carry a number
+# ("TIME Fiber 300", "MaxSpeed Fibre 900"), while NOT flagging ordinary prose ("TIME Fibre plans",
+# "Our Fibre network", "Malaysian Fibre provider"). Fabricated *prices* are caught independently by
+# the amount allow-list; a fabricated brand with a non-numeric suffix ("MaxSpeed Fibre Ultra") is an
+# accepted residual gap (docs/take-home-plan.md §8).
+_PLAN_RE = re.compile(r"\b[A-Za-z][A-Za-z0-9]* Fib(?:re|er) \d\S*")
 
 
 @dataclass(frozen=True)

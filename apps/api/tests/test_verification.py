@@ -1,3 +1,4 @@
+from app.core.catalog import CATALOG
 from app.services.offer_service import build_offer_ladder
 from app.ai.verification import verify_grounding
 
@@ -39,12 +40,12 @@ def test_missing_recommended_offer_fails() -> None:
 
 
 def test_invented_brand_name_fails() -> None:
-    # Recommended plan + a valid RM amount are present, but a fabricated brand must still be caught.
-    text = "Upgrade to TIME Fibre 500 at RM 159/month — or try our MaxSpeed Fibre Ultra deal!"
+    # Recommended plan + a valid RM amount are present, but a fabricated numeric plan must be caught.
+    text = "Upgrade to TIME Fibre 500 at RM 159/month — or try our MaxSpeed Fibre 900 deal!"
     result = verify_grounding(text, LADDER, current_price=129)
     assert not result.ok
     assert result.reason == "out-of-catalog plan"
-    assert "MaxSpeed Fibre Ultra" in result.invented_plans
+    assert "MaxSpeed Fibre 900" in result.invented_plans
 
 
 def test_misspelled_plan_fails() -> None:
@@ -63,3 +64,21 @@ def test_lowercase_fibre_prose_passes() -> None:
     )
     result = verify_grounding(text, LADDER, current_price=129)
     assert result.ok
+
+
+def test_capitalized_fibre_prose_passes() -> None:
+    # Regression guard: capitalized "Fibre" used as a common noun (not a numeric plan id) must NOT be
+    # flagged. The earlier regex over-fired on these and wrongly failed fully-grounded pitches.
+    for prose in ("TIME Fibre plans", "Our Fibre network", "As your Malaysian Fibre provider"):
+        text = f"{prose}: upgrade to TIME Fibre 500 at RM 159/month for 24 months."
+        result = verify_grounding(text, LADDER, current_price=129)
+        assert result.ok, f"prose wrongly flagged: {prose} -> {result.invented_plans}"
+
+
+def test_all_catalog_names_not_flagged() -> None:
+    # Guards the regex's digit-suffix assumption against catalog drift: every real plan name, when
+    # quoted, must never land in invented_plans (a future multi-word name would fail here loudly).
+    for plan in CATALOG:
+        text = f"Consider {plan.name} at RM {plan.price_myr}/month."
+        result = verify_grounding(text, LADDER, current_price=129)
+        assert plan.name not in result.invented_plans, f"{plan.name} wrongly flagged"
