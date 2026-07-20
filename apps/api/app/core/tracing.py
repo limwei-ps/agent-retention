@@ -16,6 +16,8 @@ from contextvars import ContextVar
 
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
+from app.core.metrics import METRICS
+
 logger = logging.getLogger("app.request")
 
 TRACE_HEADER = b"x-trace-id"
@@ -73,10 +75,12 @@ class TraceIdMiddleware:
         try:
             await self._app(scope, receive, send_wrapper)
         finally:
+            method = scope.get("method", "")
+            METRICS.inc("http_requests_total", {"method": method, "status": str(status_code)})
             logger.info(
                 "request",
                 extra={
-                    "ctx_method": scope.get("method"),
+                    "ctx_method": method,
                     "ctx_path": scope.get("path"),
                     "ctx_status": status_code,
                     "ctx_latency_ms": round((time.monotonic() - started) * 1000, 1),

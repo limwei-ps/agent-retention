@@ -12,7 +12,7 @@ from fastapi import FastAPI
 
 from app import __version__
 from app.ai.single_flight import SingleFlight
-from app.api import customers, dashboard, health, pitches
+from app.api import customers, dashboard, health, metrics, pitches
 from app.core.config import settings
 from app.core.logging import configure_logging
 from app.core.tracing import TraceIdMiddleware
@@ -43,6 +43,7 @@ def create_app() -> FastAPI:
     app.state.batch_registry = BatchRegistry()
 
     app.include_router(health.router, prefix="/api")
+    app.include_router(metrics.router, prefix="/api")
     app.include_router(customers.router, prefix="/api")
     app.include_router(dashboard.router, prefix="/api")
     app.include_router(pitches.router, prefix="/api")

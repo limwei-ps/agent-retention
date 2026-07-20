@@ -24,6 +24,8 @@ from app.ai.pricing import estimate_cost
 from app.ai.prompt import PROMPT_TEMPLATE_VERSION, build_prompt
 from app.ai.single_flight import SingleFlight
 from app.ai.verification import verify_grounding
+from app.core.metrics import METRICS
+from app.core.tracing import get_trace_id
 from app.models.customer import Customer
 from app.models.pitch import Pitch, PitchStatus
 from app.repositories.pitch_repository import PitchRepository
@@ -89,6 +91,7 @@ class PitchService:
             # 1) Cache hit → replay the stored (already-verified) pitch.
             cached = self._repo.get_ready_by_cache_key(customer.id, key)
             if cached is not None:
+                METRICS.inc("pitch_cache_hits_total")
                 async for event in self._replay(cached, cache_hit=True):
                     yield event
                 return
@@ -155,6 +158,7 @@ class PitchService:
                     provider_failed = True
 
                 if provider_failed:
+                    METRICS.inc("pitch_fallbacks_total", {"hop": hop.name})
                     yield SseEvent("fallback", {"hop": hop.name})
                     break  # advance to the next hop
 
@@ -172,13 +176,16 @@ class PitchService:
                     yield _Terminal(pitch)
                     return
                 if attempt == 1:
+                    METRICS.inc("pitch_regenerations_total")
                     yield SseEvent("regenerating", {"reason": result.reason})
                     continue
+                METRICS.inc("pitch_fallbacks_total", {"hop": hop.name})
                 yield SseEvent("fallback", {"hop": hop.name})  # retry exhausted for this hop
 
         # All hops failed → last-cached fallback (degraded, flagged stale).
         cached = self._repo.get_latest_ready_for_customer(customer.id)
         if cached is not None:
+            METRICS.inc("pitch_fallbacks_total", {"hop": "cached"})
             yield SseEvent("fallback", {"hop": "cached"})
             for event in self._token_events(cached.text):
                 yield event
@@ -193,6 +200,7 @@ class PitchService:
             yield _Terminal(cached, stale=True)
             return
 
+        METRICS.inc("pitch_generations_total", {"outcome": "failed"})
         logger.warning(
             "pitch generation failed",
             extra={
@@ -241,6 +249,7 @@ class PitchService:
                 "cost_usd": pitch.cost_usd,
                 "prompt_tokens": pitch.prompt_tokens,
                 "completion_tokens": pitch.completion_tokens,
+                "trace_id": get_trace_id(),
             },
         )
 
@@ -269,3 +278,8 @@ class PitchService:
                 "ctx_fallback_hop": hop,
             },
         )
+        METRICS.inc("pitch_generations_total", {"outcome": outcome})
+        # Tokens/cost only for a fresh generation — a last-cached fallback replays an already-counted pitch.
+        if outcome == "generated":
+            METRICS.inc("pitch_tokens_total", amount=pitch.prompt_tokens + pitch.completion_tokens)
+            METRICS.inc("pitch_cost_usd_total", amount=pitch.cost_usd)
