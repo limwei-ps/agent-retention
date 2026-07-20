@@ -22,7 +22,7 @@ const DEFAULTS: FiltersState = {
   sort: "contract_end_date",
   order: "asc",
   page: 1,
-  pageSize: 20,
+  pageSize: 10,
 };
 
 interface FiltersContextValue extends FiltersState {
