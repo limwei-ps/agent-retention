@@ -21,12 +21,18 @@ The graded core is a **reliable AI layer**, not visual polish — that's where t
 
 **https://retention-web-6xowpmfgjq-as.a.run.app** _(deployed to GCP Cloud Run, `asia-southeast1`)_
 
+- **Shared password.** The URL is gated by a lightweight **HTTP Basic Auth** prompt (one shared
+  password) — enter it once when the browser asks. This is a demo gate, not per-user auth (SSO/authz
+  stay out of scope, §Assumptions).
 - **First request may cold-start** — the service scales to zero (`min-instances=0`), so the first hit
   after idle takes a few seconds to spin up.
-- The live URL runs the **real Gemini** provider (not the mock). Reviewer interactions therefore make
-  real, billable LLM calls (a fraction of a cent each). The `api` service is **private** — only the
-  `web` service can call it (service-to-service auth via a Google-signed ID token), so the LLM can't
-  be billed by hitting `api` directly. Production would add per-agent budgets + spend caps on top.
+- The live URL runs the **real Gemini** provider (not the mock). Interactions make real, billable LLM
+  calls (~$0.02 each), so it's protected three ways: the Basic-Auth gate, a **per-IP request rate
+  limit** (429 past `RATE_LIMIT_PER_MIN`, default 60), and a **hard $20/day spend cap** (fresh
+  generations return a clean "budget reached" error once hit — cached pitches still work; see
+  `GET /api/health`). The `api` service is also **private** — only `web` can call it (Google-signed ID
+  token), so the LLM can't be billed by hitting `api` directly. Production would add per-agent budgets
+  + spend caps on top.
 
 ---
 
@@ -146,7 +152,9 @@ Artifact Registry, grants the runtime service account `roles/aiplatform.user`, a
 services.
 
 ```bash
-PROJECT=<your-project> REGION=asia-southeast1 deploy/deploy.sh
+# APP_PASSWORD gates the public URL (Basic Auth); required, never committed. Optional overrides:
+# RATE_LIMIT_PER_MIN (default 60), LLM_DAILY_BUDGET_USD (default 20).
+PROJECT=<your-project> REGION=asia-southeast1 APP_PASSWORD=<shared-pw> deploy/deploy.sh
 ```
 
 Deliberate settings (and why):
@@ -172,12 +180,15 @@ Deliberate settings (and why):
 
 ## Assumptions & out of scope
 
-**Auth:** this is an internal tool for an **authenticated retention agent behind SSO** — auth is out
-of scope. No login screen.
+**Auth:** this is an internal tool for an **authenticated retention agent behind SSO** — real
+per-user auth is out of scope. The public demo adds only a **lightweight shared-password gate** (HTTP
+Basic Auth in `apps/web/src/middleware.ts`) so the link can be shared without leaving billable Gemini
+wide open; production would replace it with SSO + per-user authz and audit trails.
 
 Deliberately out of scope (named to show production judgment, not oversight):
 
-1. **Auth & access control** — authn/authz, per-agent audit trails, role scoping.
+1. **Auth & access control** — a shared-password Basic-Auth gate exists for the public demo; real
+   per-user authn/authz, audit trails, and role scoping are out of scope.
 2. **PII & data governance** — real telco data to a third-party LLM needs a DPA, PII
    redaction/tokenization before the prompt, data residency, and retention/deletion policy.
 3. **Durable bulk orchestration** — bulk runs in-process via `BackgroundTasks` + SSE (a timeline
@@ -185,7 +196,9 @@ Deliberately out of scope (named to show production judgment, not oversight):
    and independent scaling.
 4. **Persistent, shared datastore** — SQLite + seed-on-boot is a demo convenience; production wants a
    managed DB (Cloud SQL / Postgres) with migrations, backups, pooling.
-5. **LLM cost controls** — per-agent budgets, spend caps, and quota alerts, beyond token logging.
+5. **LLM cost controls** — a global **$20/day** spend cap + a per-IP request rate limit are built; a
+   production build wants **per-agent** budgets, quota alerts, and the secrets in Secret Manager
+   (the gate password is a deploy-time env var here).
 6. **Full observability stack** — a request trace id + Prometheus metrics are built (see above);
    production still wants dashboards, distributed tracing across services, cost attribution per
    agent/segment, and alerting on error-rate/latency spikes.

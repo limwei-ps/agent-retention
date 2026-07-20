@@ -163,6 +163,14 @@ Structured JSON logs per call: `customer_id, model, cache_hit, prompt/completion
 latency_ms, grounding_ok, fallback_hop`. Cost from pinned per-model price constants. Pin the exact
 Gemini model id in config + README.
 
+**Cost enforcement (public-demo hardening):** beyond logging, a hard **daily spend cap**
+(`LLM_DAILY_BUDGET_USD`, in-process `DailyBudget`, `app/core/budget.py`) refuses a fresh generation
+once the day's estimated cost is reached — cache hits + last-cached fallbacks stay free; state in
+`GET /api/health`. At the edge, the `web` service adds an HTTP **Basic-Auth gate** + a **per-IP
+request rate limit** (`apps/web/src/middleware.ts`, `RATE_LIMIT_PER_MIN`) so the shared public URL
+isn't open to anonymous, unbounded billable calls. Both are demo-scope (single-instance, env-var
+secret); production wants per-agent budgets + SSO + Secret Manager.
+
 ### 4.9 LLM mode
 `LLM_MODE=mock|gemini`. **Mock** = deterministic, grounded generator (echoes the recommended offer)
 — used in tests and as the deployed default. **Gemini** via `google-genai` behind the flag.

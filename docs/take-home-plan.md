@@ -296,8 +296,10 @@ config flag.
 State these explicitly in the README. Naming them shows production judgment; the interviewer reads
 "I know what I skipped and why," not "I didn't think of it."
 
-- **Auth & access control.** No login here; assumes an authenticated retention agent behind SSO.
-  Production needs authn/authz, per-agent audit trails, and role scoping.
+- **Auth & access control.** A lightweight **shared-password HTTP Basic Auth gate**
+  (`apps/web/src/middleware.ts`) protects the public demo URL; it assumes an authenticated retention
+  agent behind SSO in production, which still needs real per-user authn/authz, audit trails, and role
+  scoping. The gate password is a deploy-time env var (Secret Manager deferred).
 - **PII handling & data governance.** Fake data sidesteps it. Real telco customer data going to a
   third-party LLM needs a data processing agreement, PII redaction/tokenization before the prompt,
   regional data residency, and a retention/deletion policy.
@@ -309,8 +311,10 @@ State these explicitly in the README. Naming them shows production judgment; the
 - **Real observability stack.** Structured logs here; production wants metrics dashboards, tracing
   across the request→LLM→cache path, cost attribution per agent/segment, and alerting on error-rate
   and latency spikes.
-- **LLM cost controls.** Production needs per-tenant/agent budgets, spend caps, and quota alerts —
-  not just token logging.
+- **LLM cost controls.** A global **daily spend cap** (`LLM_DAILY_BUDGET_USD`, in-process
+  `DailyBudget`) + a **per-IP request rate limit** (`RATE_LIMIT_PER_MIN`) now protect the shared URL;
+  both are single-instance/in-process. Production needs per-tenant/agent budgets, a shared limiter
+  store (Redis) if scaled past one instance, and quota alerts.
 - **Human-in-the-loop review & compliance.** Retention offers may have legal/regulatory constraints
   (pricing promises, fair-treatment rules). Production likely needs agent approval before a pitch is
   sent, and guardrails on what offers the model may state.

@@ -87,8 +87,10 @@ are relative to the repo root. This mirrors the PDF's own section order.
 - [x] **Fallback — degrade gracefully if the provider is unavailable**
   - `apps/api/app/ai/llm_provider.py` (`gemini-2.5-pro → gemini-2.5-flash` chain) + `apps/api/app/services/pitch_service.py` (→ last-cached stale pitch → clean error event); `apps/api/app/ai/llm_client.py` normalizes failures to `ProviderError` to trigger each hop.
 
-- [x] **Rate limiting & concurrency — batching and backpressure**
-  - `apps/api/app/services/bulk_pitch_service.py` (`asyncio.Semaphore`) + `apps/api/app/core/config.py` (`bulk_concurrency=4`) — bounded fan-out so bulk never overwhelms the LLM API.
+- [x] **Rate limiting & concurrency — batching and backpressure** _(layered)_
+  - Bulk fan-out: `apps/api/app/services/bulk_pitch_service.py` (`asyncio.Semaphore`) + `apps/api/app/core/config.py` (`bulk_concurrency=4`) — bounded so bulk never overwhelms the LLM API.
+  - Request layer: `apps/web/src/middleware.ts` — per-IP fixed-window rate limit on `/api/*` (`RATE_LIMIT_PER_MIN`, default 60) → 429, so a single client can't hammer the backend/LLM.
+  - Cost ceiling: `apps/api/app/core/budget.py` — hard `$20/day` spend cap refuses fresh generations when the daily budget is spent.
   - `apps/api/app/db/session.py` — SQLite WAL + `busy_timeout=5000` to survive concurrent bulk writers.
 
 - [x] **Failure handling — which succeeded, which didn't, mid-batch**
