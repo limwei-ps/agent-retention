@@ -25,7 +25,9 @@
     "typecheck:web": "pnpm --filter web typecheck",
     "typecheck:api": "cd apps/api && uv run mypy app",
     "test:web": "pnpm --filter web test",
+    "test:web:cov": "pnpm --filter web test:cov",
     "test:api": "cd apps/api && uv run pytest",
+    "test:api:cov": "cd apps/api && uv run pytest --cov=app --cov-report=term-missing",
     "prepare": "git config core.hooksPath .githooks || true"
   },
   "devDependencies": {
