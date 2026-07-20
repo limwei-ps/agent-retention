@@ -35,5 +35,9 @@ class Settings(BaseSettings):
     # Bulk generation backpressure (spec §4.5)
     bulk_concurrency: int = 4
 
+    # Hard daily LLM spend ceiling (USD) for the shared public demo; 0 = unlimited.
+    # Once the day's estimated cost reaches this, fresh generations are refused (cache still served).
+    llm_daily_budget_usd: float = 0.0
+
 
 settings = Settings()

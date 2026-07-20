@@ -13,7 +13,7 @@ export interface paths {
         };
         /**
          * Health
-         * @description Liveness probe; also reports the active LLM mode (mock|gemini).
+         * @description Liveness probe; reports the active LLM mode (mock|gemini) and the daily spend-cap state.
          */
         get: operations["health_api_health_get"];
         put?: never;
@@ -294,6 +294,12 @@ export interface components {
             status: string;
             /** Llm Mode */
             llm_mode: string;
+            /** Daily Budget Usd */
+            daily_budget_usd: number;
+            /** Daily Spent Usd */
+            daily_spent_usd: number;
+            /** Budget Ok */
+            budget_ok: boolean;
         };
         /** OfferLadder */
         OfferLadder: {

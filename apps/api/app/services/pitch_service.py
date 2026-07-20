@@ -24,6 +24,7 @@ from app.ai.pricing import estimate_cost
 from app.ai.prompt import PROMPT_TEMPLATE_VERSION, build_prompt
 from app.ai.single_flight import SingleFlight
 from app.ai.verification import verify_grounding
+from app.core.budget import BUDGET
 from app.core.metrics import METRICS
 from app.core.tracing import get_trace_id
 from app.models.customer import Customer
@@ -110,7 +111,16 @@ class PitchService:
                     yield event
                 return
 
-        # 3) Lead the generation (force bypasses single-flight so it never joins a normal run).
+        # 3) Daily spend cap: refuse a fresh (billable) generation once the day's budget is spent.
+        # Cache hits + single-flight replays above are free and already returned; only new LLM calls
+        # are gated, so the app keeps working (cached pitches) when the cap is hit.
+        if BUDGET.over_budget():
+            yield SseEvent(
+                "error", {"message": "daily generation budget reached — try again tomorrow"}
+            )
+            return
+
+        # 4) Lead the generation (force bypasses single-flight so it never joins a normal run).
         future = None if force else self._sf.lead(key)
         pitch, stale = None, False
         try:
@@ -283,3 +293,4 @@ class PitchService:
         if outcome == "generated":
             METRICS.inc("pitch_tokens_total", amount=pitch.prompt_tokens + pitch.completion_tokens)
             METRICS.inc("pitch_cost_usd_total", amount=pitch.cost_usd)
+            BUDGET.record(pitch.cost_usd)  # count toward the daily spend cap

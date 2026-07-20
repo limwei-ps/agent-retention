@@ -5,6 +5,7 @@ from sqlalchemy import func, select
 from app.ai.llm_client import MockLLM, ProviderError
 from app.ai.llm_provider import LLMChain, LLMHop
 from app.ai.single_flight import SingleFlight
+from app.core.budget import DailyBudget
 from app.models.pitch import Pitch
 from app.repositories.pitch_repository import SqlPitchRepository
 from app.services.offer_service import build_offer_ladder
@@ -229,3 +230,39 @@ async def test_single_flight_coalesced_failure_yields_clean_error(db_session, ma
     assert r1[-1].event == "error"
     assert r2[-1].event == "error"
     assert _pitch_count(db_session) == 0
+
+
+def _over_budget() -> DailyBudget:
+    b = DailyBudget(limit_usd=0.01, tz_name="Asia/Kuala_Lumpur")
+    b.record(1.0)  # spent >= limit
+    return b
+
+
+async def test_over_budget_refuses_fresh_generation(db_session, make_customer, monkeypatch):
+    # Over the daily cap → a fresh generation is refused with a clean error and no LLM call / no row.
+    monkeypatch.setattr("app.services.pitch_service.BUDGET", _over_budget())
+    customer, ladder = _customer(db_session, make_customer)
+    client = CountingLLM()
+    events = await _run(_service(db_session, _chain(("primary", client))), customer, ladder)
+
+    assert events[-1].event == "error"
+    assert "budget" in events[-1].data["message"].lower()
+    assert client.calls == 0
+    assert _pitch_count(db_session) == 0
+
+
+async def test_cache_hit_served_even_when_over_budget(db_session, make_customer, monkeypatch):
+    # Seed a cached pitch under the default (disabled) budget, then flip to over-budget: the cache
+    # replay must still be served (only fresh generations are gated).
+    customer, ladder = _customer(db_session, make_customer)
+    client = CountingLLM()
+    svc = _service(db_session, _chain(("primary", client)))
+    await _run(svc, customer, ladder)  # miss → generate + cache
+    assert client.calls == 1
+
+    monkeypatch.setattr("app.services.pitch_service.BUDGET", _over_budget())
+    events = await _run(svc, customer, ladder)  # over budget, but cache hit → still served
+
+    assert not any(e.event == "error" for e in events)
+    assert next(e for e in events if e.event == "done").data["cache_hit"] is True
+    assert client.calls == 1  # no new LLM call
